@@ -117,6 +117,23 @@ const { useState, useEffect, useCallback, useRef } = React;
 
 const DOC_ID = 'delicious-diet';
 
+// Firestore لا يدعم المصفوفات المتداخلة — نحوّل plans إلى نص عند الحفظ
+const toCloud = d => ({
+  subscribers: d.subscribers || [],
+  subscriptions: d.subscriptions || [],
+  meals: d.meals || [],
+  plansJSON: JSON.stringify(d.plans || {})
+});
+const fromCloud = d => ({
+  subscribers: d.subscribers || [],
+  subscriptions: d.subscriptions || [],
+  meals: d.meals || [],
+  plans: (() => {
+    try { return d.plansJSON ? JSON.parse(d.plansJSON) : (d.plans || {}); }
+    catch (e) { return {}; }
+  })()
+});
+
 const PLANS = {
   '3': { label: 'ثلاث وجبات', sub: 'فطور · غداء · عشاء', icon: '🍽', 24: 1250, 6: 330 },
   '2': { label: 'وجبتين', sub: 'فطور · غداء', icon: '🍴', 24: 850, 6: 225 },
@@ -260,12 +277,12 @@ function App(){
         if(snap.exists()){
           const d=snap.data();
           if(d&&Array.isArray(d.subscribers)){
-            const next={subscribers:d.subscribers,subscriptions:d.subscriptions||[],meals:d.meals||[],plans:d.plans||{}};
+            const next=fromCloud(d);
             setData(next);
             try{localStorage.setItem(KEY,JSON.stringify(next));}catch(e){}
           }
         }else{
-          fb.setDoc(ref,dataRef.current).catch(e=>console.error(e));
+          fb.setDoc(ref,toCloud(dataRef.current)).catch(e=>console.error(e));
         }
         setSync('سحابي');
       },err=>{console.error('[Firestore]',err);setSync('خطأ');});
@@ -285,7 +302,7 @@ function App(){
     try{localStorage.setItem(KEY,JSON.stringify(next));}catch(e){}
     const fb=window.__fb;
     if(fb){
-      fb.setDoc(fb.doc(fb.db,'sites',DOC_ID),next)
+      fb.setDoc(fb.doc(fb.db,'sites',DOC_ID),toCloud(next))
         .catch(e=>{console.error('[Firestore] فشل الحفظ:',e);setSync('خطأ');});
     }
   },[]);
