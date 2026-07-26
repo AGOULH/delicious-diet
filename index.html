@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delicious Diet — وجبات صحية فاخرة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --color-bg:#F5F2EA; --color-surface:#EFEADF; --color-text:#14261C;
+  --color-accent:#14412F; --color-accent-2:#B99B54;
+  --color-accent-100:#E7EFE9; --color-accent-200:#CFE0D4; --color-accent-300:#A9C4B2;
+  --color-accent-400:#7CA089; --color-accent-500:#4C7A61; --color-accent-600:#2E6046;
+  --color-accent-700:#1E4E37; --color-accent-800:#14412F; --color-accent-900:#0C2C20;
+  --color-accent-2-100:#F7F1E1; --color-accent-2-200:#EDE0C2; --color-accent-2-300:#DFCB9B;
+  --color-accent-2-400:#CFB477; --color-accent-2-500:#B99B54; --color-accent-2-600:#9C8144;
+  --color-accent-2-700:#7C6634; --color-accent-2-800:#5A4A26; --color-accent-2-900:#3A3018;
+  --color-divider:color-mix(in srgb,#14261C 14%,transparent);
+  --font-heading:"Cairo",system-ui,sans-serif;
+  --font-body:"Tajawal",system-ui,sans-serif;
+  --gold:#B99B54; --green:#14412F; --cream:#F5F2EA;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--color-bg);font-family:var(--font-body);color:var(--color-text);direction:rtl}
+a{color:var(--color-accent-700);text-decoration:none}
+a:hover{color:var(--color-accent-600)}
+@keyframes ddFade{0%{opacity:0}6%{opacity:1}25%{opacity:1}31%{opacity:0}100%{opacity:0}}
+@keyframes ddUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes ddPulse{0%,100%{opacity:.35}50%{opacity:1}}
+
+.input{width:100%;padding:10px 14px;border:1px solid var(--color-divider);background:var(--color-bg);font-family:var(--font-body);font-size:14px;color:var(--color-text);outline:none}
+.input:focus{border-color:var(--color-accent-500)}
+select.input{cursor:pointer}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;font-weight:700;color:var(--color-accent-700)}
+
+.seg{display:flex;border:1px solid var(--color-divider);overflow:hidden}
+.seg button{flex:1;padding:10px 16px;border:none;background:var(--color-bg);font-family:var(--font-body);font-size:14px;cursor:pointer;color:var(--color-accent-700);font-weight:600;transition:all .15s}
+.seg button.is-on{background:var(--green);color:var(--cream)}
+.seg button:not(.is-on):hover{background:var(--color-accent-100)}
+
+.tag{display:inline-block;padding:3px 10px;font-size:12px;font-weight:700}
+.tag-accent{background:var(--color-accent-100);color:var(--color-accent-800)}
+.tag-outline{border:1px solid var(--color-divider);color:var(--color-accent-600)}
+.tag-neutral{background:var(--color-accent-2-100);color:var(--color-accent-2-800)}
+
+table.table{width:100%;border-collapse:collapse}
+table.table th{background:var(--color-accent-100);color:var(--color-accent-800);font-size:13px;padding:10px 12px;text-align:right;font-weight:700}
+table.table td{padding:10px 12px;border-bottom:1px solid var(--color-divider);font-size:13.5px}
+
+.card{border:1px solid var(--color-divider)}
+
+.hero-img{position:absolute;inset:0;background-size:cover;background-position:center}
+.btn-gold{background:var(--gold);border:1px solid var(--gold);color:#20180A;font-family:var(--font-body);font-weight:700;cursor:pointer;transition:background .15s}
+.btn-gold:hover{background:#CFB477}
+.btn-green{background:var(--green);border:1px solid var(--green);color:var(--cream);font-family:var(--font-body);font-weight:700;cursor:pointer;transition:background .15s}
+.btn-green:hover{background:var(--color-accent-700)}
+.btn-outline{background:transparent;border:1px solid var(--color-divider);font-family:var(--font-body);cursor:pointer;transition:all .15s}
+.btn-outline:hover{border-color:var(--color-accent-500);color:var(--color-accent-700)}
+.btn-wa{background:#1FA855;border:none;color:#fff;font-family:var(--font-body);font-weight:700;cursor:pointer}
+.btn-wa:hover{background:#178A45}
+.btn-danger{background:transparent;border:1px solid #C9714F;color:#8A2F1E;font-family:var(--font-body);cursor:pointer}
+
+.error-box{border:1px solid #B4462F;background:#FBECE8;color:#8A2F1E;padding:11px 14px;font-size:13.5px;margin-top:14px}
+
+@media(max-width:900px){
+  .grid-3{grid-template-columns:1fr!important}
+  .grid-2{grid-template-columns:1fr!important}
+  .grid-7{grid-template-columns:repeat(3,1fr)!important}
+  .grid-4{grid-template-columns:repeat(2,1fr)!important}
+  .hero-grid{grid-template-columns:1fr!important}
+  .hero-img-box{display:none!important}
+  nav.desk-nav{display:none!important}
+  .desk-btns{display:none!important}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.0/babel.min.js"></script>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useCallback, useMemo } = React;
+
+const PLANS = {
+  '3': { label: 'ثلاث وجبات', sub: 'فطور · غداء · عشاء', icon: '🍽', 24: 1250, 6: 330 },
+  '2': { label: 'وجبتين', sub: 'فطور · غداء', icon: '🍴', 24: 850, 6: 225 },
+  '1': { label: 'وجبة واحدة', sub: 'الغداء', icon: '🥄', 24: 480, 6: 130 }
+};
+const DAYS = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+const TYPES = { chicken:'دجاج', meat:'لحم', fish:'سمك', veg:'نباتي' };
+const SLOTS = { breakfast:'فطور', lunch:'غداء', dinner:'عشاء' };
+const WA = '966560250302';
+const KEY = 'dd_state_v3';
+const DELIVERY_PRICE = 150, SALAD_PRICE = 100;
+
+const iso = d => d.toISOString().slice(0,10);
+const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+const fmt = s => new Date(s).toLocaleDateString('en-GB');
+const daysLeft = end => Math.max(0, Math.ceil((new Date(end)-new Date())/86400000));
+const wa = text => window.open('https://wa.me/'+WA+'?text='+encodeURIComponent(text),'_blank');
+const qr = (txt,sz=200) => 'https://api.qrserver.com/v1/create-qr-code/?size='+sz+'x'+sz+'&margin=0&color=14412F&bgcolor=F5F2EA&data='+encodeURIComponent(txt);
+const price = (plan,dur,del,sal) => PLANS[plan][dur]+(del?DELIVERY_PRICE:0)+(sal?SALAD_PRICE:0);
+const pill = d => ({padding:'3px 10px',fontSize:'12.5px',fontWeight:700,display:'inline-block',background:d<=3?'#FBECE8':d<=7?'var(--color-accent-2-200)':'var(--color-accent-100)',color:d<=3?'#8A2F1E':d<=7?'var(--color-accent-2-900)':'var(--color-accent-800)'});
+
+const SEED_MEALS = [
+  {id:'m1',name:'صدر دجاج مشوي مع أرز بني',type:'chicken',slot:'lunch',kcal:480,protein:46,week:1},
+  {id:'m2',name:'دجاج ترياكي مع كينوا',type:'chicken',slot:'lunch',kcal:520,protein:44,week:1},
+  {id:'m3',name:'معكرونة كريمية بالدجاج',type:'chicken',slot:'lunch',kcal:560,protein:38,week:1},
+  {id:'m4',name:'ستيك لحم مع بطاطا حلوة',type:'meat',slot:'lunch',kcal:610,protein:52,week:1},
+  {id:'m5',name:'كفتة لحم مع أرز بسمتي',type:'meat',slot:'lunch',kcal:570,protein:48,week:1},
+  {id:'m6',name:'سلمون مشوي مع خضار',type:'fish',slot:'lunch',kcal:520,protein:42,week:1},
+  {id:'m7',name:'فيليه هامور مع أرز',type:'fish',slot:'lunch',kcal:470,protein:40,week:1},
+  {id:'m8',name:'خضار مشكل مع فريكة',type:'veg',slot:'lunch',kcal:420,protein:18,week:1},
+  {id:'m9',name:'شوفان بالتوت واللوز',type:'veg',slot:'breakfast',kcal:340,protein:14,week:1},
+  {id:'m10',name:'أومليت بالسبانخ والجبن',type:'veg',slot:'breakfast',kcal:310,protein:22,week:1},
+  {id:'m11',name:'توست أفوكادو مع بيض',type:'veg',slot:'breakfast',kcal:380,protein:19,week:1},
+  {id:'m12',name:'سلطة سيزر بالدجاج',type:'chicken',slot:'dinner',kcal:390,protein:34,week:1},
+  {id:'m13',name:'شوربة عدس مع خبز أسمر',type:'veg',slot:'dinner',kcal:300,protein:16,week:1},
+  {id:'m14',name:'تونا نيسواز',type:'fish',slot:'dinner',kcal:360,protein:32,week:1},
+  {id:'m15',name:'شاورما دجاج صحية',type:'chicken',slot:'lunch',kcal:460,protein:40,week:2},
+  {id:'m16',name:'لحم ستروجانوف خفيف',type:'meat',slot:'lunch',kcal:540,protein:45,week:2}
+];
+const SEED_SUBS = [
+  {id:'s1',nid:'1045887321',phone:'0551234567',name:'محمد عبدالله القحطاني'},
+  {id:'s2',nid:'1099231447',phone:'0532117788',name:'نورة سعد الدوسري'},
+  {id:'s3',nid:'2011447789',phone:'0567890123',name:'خالد إبراهيم العتيبي'},
+  {id:'s4',nid:'1077553311',phone:'0509988776',name:'ريم فهد الشمري'},
+  {id:'s5',nid:'1023665544',phone:'0544332211',name:'عبدالرحمن ناصر الحربي'},
+  {id:'s6',nid:'1088990022',phone:'0578112233',name:'سارة ماجد الزهراني'}
+];
+
+function distribute(sub, meals, proteins) {
+  const bank = meals.filter(m => Number(m.week)===1);
+  const pool = t => bank.filter(m => m.slot==='lunch' && m.type===t);
+  const q = proteins || {chicken:3,meat:2,fish:1,veg:1};
+  let lunches = [];
+  ['chicken','meat','fish','veg'].forEach(t => {
+    const p=pool(t);
+    for(let i=0;i<(q[t]||0);i++) if(p.length) lunches.push(p[i%p.length]);
+  });
+  const allLunch = bank.filter(m=>m.slot==='lunch');
+  while(lunches.length<7 && allLunch.length) lunches.push(allLunch[lunches.length%allLunch.length]);
+  lunches=lunches.slice(0,7);
+  const bf=bank.filter(m=>m.slot==='breakfast');
+  const dn=bank.filter(m=>m.slot==='dinner');
+  const n=Number(sub.plan);
+  return DAYS.map((_,i)=>{
+    const day=[];
+    if(n>=2 && bf.length) day.push(bf[i%bf.length].id);
+    if(lunches[i]) day.push(lunches[i].id);
+    if(n>=3 && dn.length) day.push(dn[i%dn.length].id);
+    return day;
+  });
+}
+
+function seedData() {
+  const today=new Date();
+  const meals=SEED_MEALS.slice();
+  const subscribers=SEED_SUBS.slice();
+  const specs=[
+    {plan:'3',dur:24,offset:-18,paid:'paid'},{plan:'2',dur:24,offset:-21,paid:'paid'},
+    {plan:'1',dur:6,offset:-3,paid:'unpaid'},{plan:'3',dur:24,offset:-8,paid:'paid'},
+    {plan:'2',dur:6,offset:-2,paid:'unpaid'},{plan:'1',dur:24,offset:-12,paid:'partial'}
+  ];
+  const subscriptions=subscribers.map((s,i)=>{
+    const sp=specs[i]; const start=addDays(today,sp.offset);
+    return {id:'sub'+(i+1),subscriberId:s.id,plan:sp.plan,duration:sp.dur,
+      start:iso(start),end:iso(addDays(start,sp.dur)),delivery:i%2===0,salad:i%3===0,paid:sp.paid,
+      proteins:{chicken:3,meat:2,fish:1,veg:1},total:price(sp.plan,sp.dur,i%2===0,i%3===0)};
+  });
+  const plans={};
+  subscribers.forEach((s,i)=>{plans[s.id]=distribute(subscriptions[i],meals,subscriptions[i].proteins);});
+  return {subscribers,subscriptions,meals,plans};
+}
+
+function printSheet(title,bodyHtml){
+  const w=window.open('','_blank','width=900,height=1000');
+  if(!w) return;
+  w.document.write('<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>'+title+'</title>'+
+    '<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">'+
+    '<style>body{font-family:Tajawal,sans-serif;color:#14261C;padding:36px;background:#fff}'+
+    'h1{font-family:Cairo,sans-serif;color:#14412F;margin:0 0 4px;font-size:26px}'+
+    'h3{font-family:Cairo,sans-serif;color:#14412F;margin:18px 0 8px;font-size:18px}'+
+    '.k{letter-spacing:2.4px;font-size:10px;color:#B99B54;margin-bottom:18px}'+
+    'table{width:100%;border-collapse:collapse;margin-top:14px}'+
+    'th{background:#14412F;color:#F5F2EA;font-size:12px;padding:8px;text-align:right}'+
+    'td{border-bottom:1px solid #ddd;padding:8px;font-size:13px}'+
+    '.hd{border-bottom:2px solid #B99B54;padding-bottom:12px;margin-bottom:16px}</style></head><body>'+
+    '<div class="hd"><h1>Delicious Diet — '+title+'</h1><div class="k">HEALTHY · FRESH · DELICIOUS</div></div>'+
+    bodyHtml+'<div style="margin-top:26px;font-size:11px;color:#777">للطلبات والاستفسار: 0560250302</div>'+
+    '</body></html>');
+  w.document.close();
+  setTimeout(()=>w.print(),600);
+}
+
+/* ═══════════════ MAIN APP ═══════════════ */
+function App(){
+  const [screen,setScreen]=useState('home');
+  const [tab,setTab]=useState('dash');
+  const [role,setRole]=useState(null);
+  const [pendingRole,setPendingRole]=useState('owner');
+  const [pin,setPin]=useState('');
+  const [loginError,setLoginError]=useState('');
+  const [search,setSearch]=useState('');
+  const [cycle,setCycle]=useState(1);
+  const [chefDay,setChefDay]=useState(new Date().getDay());
+
+  const [data,setData]=useState(()=>{
+    try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.subscribers)return d;}catch(e){}
+    return seedData();
+  });
+
+  const persist=useCallback(patch=>{
+    const next={...data,...patch};
+    try{localStorage.setItem(KEY,JSON.stringify(next));}catch(e){}
+    setData(next);
+  },[data]);
+
+  const {subscribers,subscriptions,meals,plans}=data;
+  const mealById=id=>meals.find(m=>m.id===id);
+  const subOf=sid=>subscriptions.filter(s=>s.subscriberId===sid).sort((a,b)=>b.start.localeCompare(a.start))[0];
+  const activeSubs=subscriptions.filter(s=>daysLeft(s.end)>0);
+  const nameOf=id=>(subscribers.find(x=>x.id===id)||{}).name||'—';
+  const phoneOf=id=>(subscribers.find(x=>x.id===id)||{}).phone||'';
+
+  // Calculator
+  const [calc,setCalc]=useState({gender:'male',age:30,weight:82,height:176,activity:'1.375',goal:'lose'});
+  const bmr=calc.gender==='male'?10*calc.weight+6.25*calc.height-5*calc.age+5:10*calc.weight+6.25*calc.height-5*calc.age-161;
+  let kcal=bmr*Number(calc.activity);
+  if(calc.goal==='lose')kcal-=500;if(calc.goal==='gain')kcal+=350;
+  kcal=Math.max(1200,Math.round(kcal/10)*10);
+  const prot=Math.round(calc.weight*(calc.goal==='gain'?2:1.8));
+  const fat=Math.round(kcal*0.25/9);
+  const carb=Math.round((kcal-prot*4-fat*9)/4);
+  const recPlan=calc.goal==='gain'?'3':kcal>2000?'3':kcal>1600?'2':'1';
+
+  // Order form
+  const [order,setOrder]=useState({name:'',phone:'',plan:'3',duration:'24',delivery:true,salad:false});
+  const [orderError,setOrderError]=useState('');
+  const orderTotal=price(order.plan,Number(order.duration),order.delivery,order.salad);
+
+  // New sub form
+  const blankForm=()=>({nid:'',phone:'',name:'',plan:'3',duration:'24',start:iso(new Date()),paid:'unpaid',delivery:true,salad:false,chicken:3,meat:2,fish:1,veg:1});
+  const [form,setForm]=useState(blankForm);
+  const [formError,setFormError]=useState('');
+  const protTotal=Number(form.chicken)+Number(form.meat)+Number(form.fish)+Number(form.veg);
+  const formTotal=price(form.plan,Number(form.duration),form.delivery,form.salad);
+
+  // Meal bank
+  const [meal,setMeal]=useState({name:'',type:'chicken',slot:'lunch',kcal:480,protein:40,week:'1'});
+
+  // Portal
+  const [portalQuery,setPortalQuery]=useState('');
+  const [portalId,setPortalId]=useState(null);
+  const [portalError,setPortalError]=useState('');
+
+  const doLogin=()=>{
+    if(pin!=='1234')return setLoginError('الرمز السري غير صحيح');
+    setRole(pendingRole);setPin('');setScreen(pendingRole==='chef'?'chef':'admin');
+    setTab(pendingRole==='reception'?'subs':'dash');
+  };
+
+  const submitOrder=()=>{
+    if(!order.name.trim())return setOrderError('الرجاء إدخال الاسم');
+    if(!/^05\d{8}$/.test(order.phone.trim()))return setOrderError('رقم الجوال غير صحيح');
+    setOrderError('');
+    wa('طلب اشتراك جديد\nالاسم: '+order.name+'\nالجوال: '+order.phone+'\nالباقة: '+PLANS[order.plan].label+'\nالمدة: '+order.duration+' يوم'+(order.delivery?'\nمع التوصيل':'')+(order.salad?'\nمع السلطة':'')+'\nالإجمالي: '+orderTotal+' ريال');
+  };
+
+  const saveSub=()=>{
+    if(!/^\d{10}$/.test(form.nid.trim()))return setFormError('رقم الهوية يجب أن يكون ١٠ أرقام');
+    if(!/^05\d{8}$/.test(form.phone.trim()))return setFormError('رقم الجوال يجب أن يبدأ بـ 05');
+    if(!form.name.trim())return setFormError('الرجاء إدخال الاسم');
+    if(protTotal!==7)return setFormError('توزيع البروتينات يجب أن يساوي ٧ أيام');
+    let subscriber=subscribers.find(s=>s.nid===form.nid.trim()||s.phone===form.phone.trim());
+    let newSubs=[...subscribers];
+    if(!subscriber){subscriber={id:'u'+Date.now(),nid:form.nid.trim(),phone:form.phone.trim(),name:form.name.trim()};newSubs.push(subscriber);}
+    const start=form.start;
+    const newSub={id:'sub'+Date.now(),subscriberId:subscriber.id,plan:form.plan,duration:Number(form.duration),
+      start,end:iso(addDays(new Date(start),Number(form.duration))),delivery:form.delivery,salad:form.salad,paid:form.paid,
+      proteins:{chicken:Number(form.chicken),meat:Number(form.meat),fish:Number(form.fish),veg:Number(form.veg)},total:formTotal};
+    const newPlans={...plans};
+    newPlans[subscriber.id]=distribute(newSub,meals,newSub.proteins);
+    persist({subscribers:newSubs,subscriptions:[...subscriptions,newSub],plans:newPlans});
+    setForm(blankForm());setTab('subs');setFormError('');
+  };
+
+  const addMeal=()=>{
+    if(!meal.name.trim())return;
+    persist({meals:[...meals,{id:'m'+Date.now(),name:meal.name.trim(),type:meal.type,slot:meal.slot,kcal:Number(meal.kcal)||0,protein:Number(meal.protein)||0,week:Number(meal.week)}]});
+    setMeal({...meal,name:''});
+  };
+
+  const portalLogin=()=>{
+    const sb=subscribers.find(s=>s.phone===portalQuery.trim()||s.nid===portalQuery.trim());
+    if(!sb)return setPortalError('لم نجد اشتراكاً بهذا الرقم');
+    setPortalId(sb.id);setPortalError('');
+  };
+
+  // Weekly menu for landing
+  const lunchBank=meals.filter(m=>m.slot==='lunch');
+  const weekMenu=DAYS.map((d,i)=>{const m=lunchBank[i%Math.max(1,lunchBank.length)]||{name:'—',kcal:0,protein:0};return{day:d,meal:m.name,kcal:m.kcal,protein:m.protein};});
+
+  const testimonials=[
+    {stars:'★★★★★',text:'أفضل اشتراك جربته — الوجبات طازجة والتوصيل دائماً في وقته. نزلت ٧ كيلو في شهرين.',name:'أحمد ا.',role:'مشترك منذ ٨ أشهر',initial:'أ'},
+    {stars:'★★★★★',text:'التنوع ممتاز وما مللت أبداً. خدمة العملاء عبر الواتساب سريعة جداً.',name:'لمى ع.',role:'مشتركة منذ سنة',initial:'ل'},
+    {stars:'★★★★★',text:'كمية البروتين مضبوطة مع تماريني. الشيف يراعي طلباتي الخاصة.',name:'فيصل م.',role:'مشترك منذ ٤ أشهر',initial:'ف'}
+  ];
+
+  /* ─── HEADER ─── */
+  const Header=()=>(
+    <header style={{position:'sticky',top:0,zIndex:40,background:'var(--green)',color:'var(--cream)',borderBottom:'1px solid rgba(185,155,84,.45)'}}>
+      <div style={{maxWidth:1280,margin:'0 auto',padding:'12px 24px',display:'flex',alignItems:'center',gap:20}}>
+        <div onClick={()=>{setScreen('home');setRole(null);}} style={{display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
+          <div style={{width:46,height:46,border:'2px solid var(--gold)',borderRadius:'50%',display:'grid',placeItems:'center',fontFamily:'var(--font-heading)',fontWeight:900,fontSize:19,letterSpacing:-1,color:'var(--cream)'}}>DD</div>
+          <div style={{lineHeight:1.05}}>
+            <div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:20}}>Delicious Diet</div>
+            <div style={{fontSize:'9.5px',letterSpacing:'2.6px',color:'var(--gold)',fontWeight:600}}>HEALTHY · FRESH · DELICIOUS</div>
+          </div>
+        </div>
+        <nav className="desk-nav" style={{display:'flex',gap:22,marginInlineStart:18,fontSize:'14.5px',fontWeight:500}}>
+          <a href="#pricing" style={{color:'rgba(245,242,234,.82)'}} onClick={()=>setScreen('home')}>الاشتراكات</a>
+          <a href="#menu" style={{color:'rgba(245,242,234,.82)'}} onClick={()=>setScreen('home')}>قائمة الأسبوع</a>
+          <a href="#calc" style={{color:'rgba(245,242,234,.82)'}} onClick={()=>setScreen('home')}>حاسبة السعرات</a>
+          <a href="#contact" style={{color:'rgba(245,242,234,.82)'}} onClick={()=>setScreen('home')}>تواصل</a>
+        </nav>
+        <div style={{flex:1}}/>
+        <div className="desk-btns" style={{display:'flex',gap:10}}>
+          <button onClick={()=>setScreen('portal')} style={{background:'transparent',border:'1px solid rgba(245,242,234,.35)',color:'var(--cream)',fontFamily:'var(--font-body)',fontWeight:600,fontSize:13,padding:'8px 16px',cursor:'pointer'}}>بوابة المشترك</button>
+          <button onClick={()=>{setScreen('login');setLoginError('');}} className="btn-gold" style={{fontSize:13,padding:'8px 18px'}}>دخول الإدارة</button>
+        </div>
+      </div>
+      {role && <div style={{background:'var(--color-accent-900)',padding:'8px 24px',display:'flex',alignItems:'center',gap:14,justifyContent:'center',fontSize:13,color:'rgba(245,242,234,.8)'}}>
+        <span style={{width:7,height:7,background:'var(--gold)',borderRadius:'50%',animation:'ddPulse 2s infinite'}}/>
+        <span>{role==='owner'?'صاحب المطعم':role==='chef'?'الشيف':'موظف الاستقبال'}</span>
+        <button onClick={()=>{setScreen('home');setRole(null);}} style={{background:'transparent',border:'1px solid rgba(245,242,234,.3)',color:'rgba(245,242,234,.85)',fontFamily:'var(--font-body)',fontSize:12,padding:'4px 12px',cursor:'pointer'}}>خروج</button>
+      </div>}
+    </header>
+  );
+
+  /* ─── HOME ─── */
+  const Home=()=>(
+    <main>
+      {/* Hero */}
+      <section style={{position:'relative',background:'var(--green)',color:'var(--cream)',overflow:'hidden'}}>
+        <div style={{position:'absolute',inset:0,background:'linear-gradient(90deg,rgba(20,65,47,.96) 30%,rgba(20,65,47,.55) 100%)'}}/>
+        <div className="hero-grid" style={{position:'relative',maxWidth:1280,margin:'0 auto',padding:'96px 24px 104px',display:'grid',gridTemplateColumns:'1.05fr .95fr',gap:56,alignItems:'center'}}>
+          <div style={{animation:'ddUp .7s ease both'}}>
+            <div style={{display:'inline-flex',alignItems:'center',gap:10,border:'1px solid rgba(185,155,84,.5)',padding:'6px 14px',marginBottom:26}}>
+              <span style={{width:6,height:6,background:'var(--gold)',borderRadius:'50%'}}/>
+              <span style={{fontSize:'12.5px',letterSpacing:'1.4px',color:'var(--gold)',fontWeight:600}}>طازجة يومياً · مكونات طبيعية</span>
+            </div>
+            <h1 style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:62,lineHeight:1.12,margin:'0 0 20px'}}>وجبات صحية فاخرة<br/><span style={{color:'var(--gold)'}}>تصلك كل يوم</span></h1>
+            <p style={{fontSize:'18.5px',lineHeight:1.75,color:'rgba(245,242,234,.8)',maxWidth:520,margin:'0 0 34px',fontWeight:300}}>قوائم يعدّها الشيف، سعرات محسوبة، واشتراك تديره من جوالك. اختر عدد الوجبات والمدة ونتكفّل بالباقي.</p>
+            <div style={{display:'flex',gap:14,flexWrap:'wrap'}}>
+              <a href="#pricing" className="btn-gold" style={{fontSize:15,padding:'14px 30px',display:'inline-block'}}>اشترك الآن</a>
+              <a href="#calc" style={{border:'1px solid rgba(245,242,234,.4)',color:'var(--cream)',fontWeight:600,fontSize:15,padding:'14px 30px',display:'inline-block'}}>احسب سعراتك</a>
+            </div>
+            <div style={{display:'flex',gap:36,marginTop:46,paddingTop:26,borderTop:'1px solid rgba(245,242,234,.16)'}}>
+              <div><div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:30,color:'var(--gold)'}}>+٤٨٠</div><div style={{fontSize:13,color:'rgba(245,242,234,.65)'}}>مشترك نشط</div></div>
+              <div><div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:30,color:'var(--gold)'}}>٧</div><div style={{fontSize:13,color:'rgba(245,242,234,.65)'}}>أيام توصيل أسبوعياً</div></div>
+              <div><div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:30,color:'var(--gold)'}}>٤.٩</div><div style={{fontSize:13,color:'rgba(245,242,234,.65)'}}>تقييم العملاء</div></div>
+            </div>
+          </div>
+          <div className="hero-img-box" style={{border:'1px solid rgba(185,155,84,.5)',padding:14,background:'rgba(12,44,32,.35)',aspectRatio:'4/5',display:'grid',placeItems:'center',color:'rgba(245,242,234,.3)',fontSize:18,textAlign:'center'}}>
+            📷 صورة الطبق الرئيسي
+          </div>
+        </div>
+      </section>
+
+      {/* Banner */}
+      <section style={{background:'var(--color-accent-900)',color:'var(--cream)',padding:'18px 24px'}}>
+        <div style={{maxWidth:1280,margin:'0 auto',display:'flex',justifyContent:'center',gap:56,flexWrap:'wrap',fontSize:15,fontWeight:500}}>
+          <span>🍃 وجبات طازجة يومياً</span><span style={{color:'rgba(185,155,84,.5)'}}>|</span>
+          <span>🌿 مكونات طبيعية</span><span style={{color:'rgba(185,155,84,.5)'}}>|</span>
+          <span>🥗 اختيارات صحية</span>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" style={{maxWidth:1280,margin:'0 auto',padding:'88px 24px'}}>
+        <div style={{textAlign:'center',marginBottom:52}}>
+          <div style={{fontSize:'12.5px',letterSpacing:3,color:'var(--color-accent-2-600)',fontWeight:700,marginBottom:12}}>الأسعار</div>
+          <h2 style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:44,color:'var(--green)'}}>أسعار الاشتراكات</h2>
+        </div>
+        <div className="grid-3" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:26}}>
+          {['3','2','1'].map(k=>(
+            <div key={k} className="card" style={{padding:'30px 26px',background:'var(--color-bg)',display:'flex',flexDirection:'column',gap:20}}>
+              <div style={{display:'flex',alignItems:'center',gap:14}}>
+                <div style={{width:58,height:58,border:'2px solid var(--gold)',borderRadius:'50%',background:'var(--green)',color:'var(--cream)',display:'grid',placeItems:'center',fontSize:22}}>{PLANS[k].icon}</div>
+                <div>
+                  <div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:26,color:'var(--green)'}}>{PLANS[k].label}</div>
+                  <div style={{fontSize:13,color:'var(--color-accent-600)'}}>{PLANS[k].sub}</div>
+                </div>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1px 1fr',gap:16,alignItems:'center',borderTop:'1px solid var(--color-divider)',paddingTop:20}}>
+                <div><div style={{fontSize:13,color:'var(--color-accent-600)',marginBottom:4}}>٢٤ يوم</div><div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:38,color:'var(--green)',lineHeight:1}}>{PLANS[k][24]}<span style={{fontSize:14,fontWeight:600,marginInlineStart:6}}>ريال</span></div></div>
+                <div style={{background:'var(--color-divider)',height:52}}/>
+                <div><div style={{fontSize:13,color:'var(--color-accent-600)',marginBottom:4}}>٦ أيام</div><div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:38,color:'var(--green)',lineHeight:1}}>{PLANS[k][6]}<span style={{fontSize:14,fontWeight:600,marginInlineStart:6}}>ريال</span></div></div>
+              </div>
+              <a href="#contact" className="btn-green" style={{marginTop:'auto',fontSize:'14.5px',padding:13,textAlign:'center',display:'block'}} onClick={()=>setOrder({...order,plan:k})}>اطلب هذا الاشتراك</a>
+            </div>
+          ))}
+        </div>
+        <div className="grid-2" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:26,marginTop:26}}>
+          <div className="card" style={{padding:'22px 26px',display:'flex',alignItems:'center',gap:18,background:'var(--color-bg)'}}>
+            <div style={{width:52,height:52,border:'2px solid var(--gold)',borderRadius:'50%',background:'var(--green)',color:'var(--cream)',display:'grid',placeItems:'center',fontSize:20}}>🚚</div>
+            <div><div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:21,color:'var(--green)'}}>التوصيل</div><div style={{fontSize:13,color:'var(--color-accent-600)'}}>إضافة اختيارية</div></div>
+            <div style={{marginInlineStart:'auto',fontFamily:'var(--font-heading)',fontWeight:900,fontSize:30,color:'var(--green)'}}>{DELIVERY_PRICE}<span style={{fontSize:13,fontWeight:600,marginInlineStart:5}}>ريال</span></div>
+          </div>
+          <div className="card" style={{padding:'22px 26px',display:'flex',alignItems:'center',gap:18,background:'var(--color-bg)'}}>
+            <div style={{width:52,height:52,border:'2px solid var(--gold)',borderRadius:'50%',background:'var(--green)',color:'var(--cream)',display:'grid',placeItems:'center',fontSize:20}}>🥗</div>
+            <div><div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:21,color:'var(--green)'}}>السلطة</div><div style={{fontSize:13,color:'var(--color-accent-600)'}}>إضافة اختيارية</div></div>
+            <div style={{marginInlineStart:'auto',fontFamily:'var(--font-heading)',fontWeight:900,fontSize:30,color:'var(--green)'}}>{SALAD_PRICE}<span style={{fontSize:13,fontWeight:600,marginInlineStart:5}}>ريال</span></div>
+          </div>
+        </div>
+      </section>
+
+      {/* Weekly Menu */}
+      <section id="menu" style={{background:'var(--color-surface)',borderBlock:'1px solid var(--color-divider)'}}>
+        <div style={{maxWidth:1280,margin:'0 auto',padding:'80px 24px'}}>
+          <div style={{marginBottom:38}}>
+            <div style={{fontSize:'12.5px',letterSpacing:3,color:'var(--color-accent-2-600)',fontWeight:700,marginBottom:10}}>هذا الأسبوع</div>
+            <h2 style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:40,color:'var(--green)'}}>قائمة الأسبوع الحالية</h2>
+          </div>
+          <div className="grid-7" style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:14}}>
+            {weekMenu.map((d,i)=>(
+              <div key={i} className="card" style={{background:'var(--color-bg)',display:'flex',flexDirection:'column'}}>
+                <div style={{background:'var(--green)',color:'var(--cream)',padding:9,textAlign:'center',fontFamily:'var(--font-heading)',fontWeight:700,fontSize:15}}>{d.day}</div>
+                <div style={{padding:'12px 12px 15px',display:'flex',flexDirection:'column',gap:6,flex:1}}>
+                  <div style={{fontSize:14,fontWeight:700,lineHeight:1.4,color:'var(--green)'}}>{d.meal}</div>
+                  <div style={{fontSize:12,color:'var(--color-accent-600)',marginTop:'auto'}}>{d.kcal} سعرة · {d.protein}غ بروتين</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Calculator */}
+      <section id="calc" style={{maxWidth:1280,margin:'0 auto',padding:'88px 24px'}}>
+        <div className="grid-2" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:44,alignItems:'start'}}>
+          <div>
+            <div style={{fontSize:'12.5px',letterSpacing:3,color:'var(--color-accent-2-600)',fontWeight:700,marginBottom:10}}>حاسبة</div>
+            <h2 style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:40,color:'var(--green)',margin:'0 0 14px'}}>حاسبة السعرات والأهداف</h2>
+            <p style={{fontSize:'16.5px',lineHeight:1.8,color:'var(--color-accent-700)',fontWeight:300,margin:'0 0 30px'}}>أدخل بياناتك ونقترح عليك عدد الوجبات المناسب لهدفك.</p>
+            <div className="card" style={{padding:28,background:'var(--color-bg)',display:'grid',gridTemplateColumns:'1fr 1fr',gap:18}}>
+              <div className="field"><label>الجنس</label>
+                <div className="seg"><button className={calc.gender==='male'?'is-on':''} onClick={()=>setCalc({...calc,gender:'male'})}>ذكر</button><button className={calc.gender==='female'?'is-on':''} onClick={()=>setCalc({...calc,gender:'female'})}>أنثى</button></div>
+              </div>
+              <div className="field"><label>العمر</label><input className="input" type="number" value={calc.age} onChange={e=>setCalc({...calc,age:Number(e.target.value)||0})}/></div>
+              <div className="field"><label>الوزن (كجم)</label><input className="input" type="number" value={calc.weight} onChange={e=>setCalc({...calc,weight:Number(e.target.value)||0})}/></div>
+              <div className="field"><label>الطول (سم)</label><input className="input" type="number" value={calc.height} onChange={e=>setCalc({...calc,height:Number(e.target.value)||0})}/></div>
+              <div className="field"><label>النشاط</label><select className="input" value={calc.activity} onChange={e=>setCalc({...calc,activity:e.target.value})}><option value="1.2">قليل الحركة</option><option value="1.375">نشاط خفيف</option><option value="1.55">نشاط متوسط</option><option value="1.725">نشاط عالٍ</option></select></div>
+              <div className="field"><label>الهدف</label><select className="input" value={calc.goal} onChange={e=>setCalc({...calc,goal:e.target.value})}><option value="lose">خسارة وزن</option><option value="keep">ثبات الوزن</option><option value="gain">بناء عضل</option></select></div>
+            </div>
+          </div>
+          <div className="card" style={{padding:38,background:'var(--green)',color:'var(--cream)',borderColor:'var(--gold)'}}>
+            <div style={{fontSize:13,letterSpacing:2,color:'var(--gold)',fontWeight:700,marginBottom:18}}>احتياجك اليومي</div>
+            <div style={{display:'flex',alignItems:'baseline',gap:10,marginBottom:6}}>
+              <div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:76,lineHeight:1}}>{kcal}</div>
+              <div style={{fontSize:17,color:'rgba(245,242,234,.7)'}}>سعرة / يوم</div>
+            </div>
+            <div style={{fontSize:14,color:'rgba(245,242,234,.62)',marginBottom:28}}>{calc.goal==='lose'?'عجز ٥٠٠ سعرة لخسارة ~٠.٥ كجم أسبوعياً':calc.goal==='gain'?'فائض ٣٥٠ سعرة لبناء العضل':'للمحافظة على وزنك الحالي'}</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:30}}>
+              <div style={{border:'1px solid rgba(185,155,84,.4)',padding:14}}><div style={{fontSize:12,color:'var(--gold)'}}>بروتين</div><div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:26}}>{prot}غ</div></div>
+              <div style={{border:'1px solid rgba(185,155,84,.4)',padding:14}}><div style={{fontSize:12,color:'var(--gold)'}}>كربوهيدرات</div><div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:26}}>{carb}غ</div></div>
+              <div style={{border:'1px solid rgba(185,155,84,.4)',padding:14}}><div style={{fontSize:12,color:'var(--gold)'}}>دهون</div><div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:26}}>{fat}غ</div></div>
+            </div>
+            <div style={{borderTop:'1px solid rgba(245,242,234,.2)',paddingTop:22}}>
+              <div style={{fontSize:13,color:'rgba(245,242,234,.65)',marginBottom:8}}>الاشتراك المقترح لك</div>
+              <div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:28,color:'var(--gold)',marginBottom:16}}>{PLANS[recPlan].label} · ٢٤ يوم · {PLANS[recPlan][24]} ريال</div>
+              <button className="btn-gold" style={{width:'100%',fontSize:'14.5px',padding:13}} onClick={()=>wa('السلام عليكم، احسبت سعراتي: '+kcal+' سعرة يومياً، وأرغب باشتراك '+PLANS[recPlan].label)}>اطلب عبر واتساب</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section style={{background:'var(--green)',color:'var(--cream)',padding:'80px 24px'}}>
+        <div style={{maxWidth:1280,margin:'0 auto'}}>
+          <h2 style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:40,textAlign:'center',marginBottom:40}}>آراء مشتركينا</h2>
+          <div className="grid-3" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:24}}>
+            {testimonials.map((t,i)=>(
+              <div key={i} style={{border:'1px solid rgba(185,155,84,.45)',padding:28,display:'flex',flexDirection:'column',gap:16}}>
+                <div style={{color:'var(--gold)',fontSize:16,letterSpacing:3}}>{t.stars}</div>
+                <p style={{fontSize:16,lineHeight:1.85,color:'rgba(245,242,234,.86)',fontWeight:300}}>{t.text}</p>
+                <div style={{display:'flex',alignItems:'center',gap:12,marginTop:'auto',paddingTop:12,borderTop:'1px solid rgba(245,242,234,.16)'}}>
+                  <div style={{width:38,height:38,borderRadius:'50%',border:'1px solid var(--gold)',display:'grid',placeItems:'center',fontWeight:700,color:'var(--gold)',fontSize:14}}>{t.initial}</div>
+                  <div><div style={{fontWeight:700,fontSize:'14.5px'}}>{t.name}</div><div style={{fontSize:'12.5px',color:'rgba(245,242,234,.55)'}}>{t.role}</div></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Contact / Order */}
+      <section id="contact" style={{maxWidth:1280,margin:'0 auto',padding:'88px 24px'}}>
+        <div className="grid-2" style={{display:'grid',gridTemplateColumns:'1.1fr .9fr',gap:44}}>
+          <div className="card" style={{padding:36,background:'var(--color-bg)'}}>
+            <h2 style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:34,color:'var(--green)',margin:'0 0 8px'}}>طلب اشتراك سريع</h2>
+            <p style={{fontSize:15,color:'var(--color-accent-700)',fontWeight:300,margin:'0 0 26px'}}>املأ البيانات وسنفتح لك واتساب برسالة جاهزة للإرسال.</p>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+              <div className="field"><label>الاسم الكامل</label><input className="input" value={order.name} onChange={e=>setOrder({...order,name:e.target.value})} placeholder="محمد عبدالله"/></div>
+              <div className="field"><label>رقم الجوال</label><input className="input" value={order.phone} onChange={e=>setOrder({...order,phone:e.target.value})} placeholder="05XXXXXXXX" dir="ltr"/></div>
+              <div className="field"><label>نوع الاشتراك</label><select className="input" value={order.plan} onChange={e=>setOrder({...order,plan:e.target.value})}><option value="3">ثلاث وجبات</option><option value="2">وجبتين</option><option value="1">وجبة واحدة</option></select></div>
+              <div className="field"><label>المدة</label><select className="input" value={order.duration} onChange={e=>setOrder({...order,duration:e.target.value})}><option value="24">٢٤ يوم</option><option value="6">٦ أيام</option></select></div>
+              <div className="field" style={{gridColumn:'span 2'}}>
+                <label>الإضافات</label>
+                <div style={{display:'flex',gap:22,paddingTop:6}}>
+                  <label style={{display:'flex',alignItems:'center',gap:9,cursor:'pointer',fontSize:'14.5px'}}><input type="checkbox" checked={order.delivery} onChange={e=>setOrder({...order,delivery:e.target.checked})} style={{width:17,height:17,accentColor:'var(--green)'}}/><span>التوصيل +{DELIVERY_PRICE} ر.س</span></label>
+                  <label style={{display:'flex',alignItems:'center',gap:9,cursor:'pointer',fontSize:'14.5px'}}><input type="checkbox" checked={order.salad} onChange={e=>setOrder({...order,salad:e.target.checked})} style={{width:17,height:17,accentColor:'var(--green)'}}/><span>السلطة +{SALAD_PRICE} ر.س</span></label>
+                </div>
+              </div>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:20,marginTop:26,paddingTop:22,borderTop:'1px solid var(--color-divider)'}}>
+              <div><div style={{fontSize:13,color:'var(--color-accent-600)'}}>الإجمالي</div><div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:36,color:'var(--green)',lineHeight:1.1}}>{orderTotal} <span style={{fontSize:15}}>ريال</span></div></div>
+              <button className="btn-wa" style={{marginInlineStart:'auto',fontSize:15,padding:'15px 32px'}} onClick={submitOrder}>إرسال عبر واتساب</button>
+            </div>
+            {orderError && <div className="error-box">{orderError}</div>}
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:22}}>
+            <div className="card" style={{padding:30,background:'var(--green)',color:'var(--cream)',borderColor:'var(--gold)',textAlign:'center'}}>
+              <div style={{fontSize:'13.5px',letterSpacing:'1.6px',color:'var(--gold)',marginBottom:12}}>للطلبات والاستفسار</div>
+              <a href="https://wa.me/966560250302" target="_blank" style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:42,color:'var(--cream)',letterSpacing:1,display:'block'}} dir="ltr">0560250302</a>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:22}}>
+              <div className="card" style={{padding:22,background:'var(--color-bg)',textAlign:'center'}}>
+                <div style={{fontSize:13,fontWeight:700,color:'var(--green)',marginBottom:12}}>باركود الاشتراك</div>
+                <img src={qr(location.href.split('#')[0]+'#pricing',300)} alt="QR" style={{width:'100%',maxWidth:150,display:'block',margin:'0 auto'}}/>
+              </div>
+              <div className="card" style={{padding:22,background:'var(--color-bg)',textAlign:'center'}}>
+                <div style={{fontSize:13,fontWeight:700,color:'var(--green)',marginBottom:12}}>باركود بوابة المشترك</div>
+                <img src={qr(location.href.split('#')[0]+'#portal',300)} alt="QR" style={{width:'100%',maxWidth:150,display:'block',margin:'0 auto'}}/>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{background:'var(--color-accent-900)',color:'rgba(245,242,234,.6)',padding:'34px 24px',textAlign:'center',fontSize:'13.5px'}}>
+        <div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:20,color:'var(--cream)',marginBottom:6}}>Delicious Diet</div>
+        <div style={{letterSpacing:'2.4px',fontSize:'10.5px',color:'var(--gold)',marginBottom:14}}>HEALTHY · FRESH · DELICIOUS</div>
+        <div>© 2026 Delicious Diet · جميع الحقوق محفوظة</div>
+      </footer>
+    </main>
+  );
+
+  /* ─── LOGIN ─── */
+  const Login=()=>(
+    <div style={{maxWidth:560,margin:'0 auto',padding:'76px 24px'}}>
+      <div className="card" style={{padding:40,background:'var(--color-bg)'}}>
+        <h2 style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:32,color:'var(--green)',margin:'0 0 6px'}}>دخول فريق العمل</h2>
+        <p style={{fontSize:'14.5px',color:'var(--color-accent-700)',fontWeight:300,margin:'0 0 26px'}}>اختر الدور وأدخل الرمز السري (تجريبي: 1234)</p>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:22}}>
+          {[{k:'owner',icon:'👤',label:'صاحب المطعم'},{k:'reception',icon:'🧾',label:'موظف الاستقبال'},{k:'chef',icon:'👨‍🍳',label:'الشيف'}].map(r=>(
+            <button key={r.k} onClick={()=>setPendingRole(r.k)} className={pendingRole===r.k?'btn-green':'btn-outline'} style={{padding:'18px 10px',textAlign:'center'}}>
+              <div style={{fontSize:24,marginBottom:8}}>{r.icon}</div>
+              <div style={{fontWeight:700,fontSize:14}}>{r.label}</div>
+            </button>
+          ))}
+        </div>
+        <div className="field"><label>الرمز السري</label><input className="input" type="password" value={pin} onChange={e=>{setPin(e.target.value);setLoginError('');}} onKeyDown={e=>e.key==='Enter'&&doLogin()} dir="ltr" placeholder="••••"/></div>
+        {loginError && <div className="error-box">{loginError}</div>}
+        <button className="btn-green" style={{marginTop:20,width:'100%',fontSize:15,padding:14}} onClick={doLogin}>دخول</button>
+      </div>
+    </div>
+  );
+
+  /* ─── ADMIN ─── */
+  const Admin=()=>{
+    const soon=activeSubs.filter(s=>daysLeft(s.end)<=7);
+    const unpaid=subscriptions.filter(s=>s.paid!=='paid');
+    const revenue=subscriptions.filter(s=>s.paid==='paid').reduce((a,s)=>a+s.total,0);
+    const tabDefs=role==='reception'?[['subs','المشتركون'],['new','اشتراك جديد'],['bank','بنك الوجبات']]:[['dash','لوحة القيادة'],['subs','المشتركون'],['new','اشتراك جديد'],['bank','بنك الوجبات'],['rev','الإيرادات']];
+    const q=search.trim();
+    const filtered=subscribers.filter(s=>!q||s.name.includes(q)||s.phone.includes(q)||s.nid.includes(q));
+
+    return(
+    <div style={{maxWidth:1400,margin:'0 auto',padding:'28px 24px 80px'}}>
+      <div style={{display:'flex',gap:8,borderBottom:'1px solid var(--color-divider)',marginBottom:28,flexWrap:'wrap'}}>
+        {tabDefs.map(([k,label])=>(
+          <button key={k} onClick={()=>setTab(k)} style={{background:'transparent',border:'none',borderBottom:'3px solid '+(tab===k?'var(--gold)':'transparent'),color:tab===k?'var(--green)':'var(--color-accent-600)',fontFamily:'var(--font-heading)',fontWeight:tab===k?800:600,fontSize:17,padding:'12px 20px',cursor:'pointer'}}>{label}</button>
+        ))}
+      </div>
+
+      {/* Dashboard */}
+      {tab==='dash' && <>
+        <div className="grid-4" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:20,marginBottom:28}}>
+          {[{l:'اشتراكات نشطة',v:activeSubs.length,h:'من أصل '+subscriptions.length,bg:'var(--green)',fg:'var(--cream)'},{l:'قريبة الانتهاء',v:soon.length,h:'خلال ٧ أيام',bg:'var(--color-accent-2-200)',fg:'var(--color-accent-2-900)'},{l:'مستحقات غير مدفوعة',v:unpaid.length,h:unpaid.reduce((a,s)=>a+s.total,0)+' ريال',bg:'var(--color-bg)',fg:'var(--color-text)'},{l:'إيراد محصّل',v:revenue,h:'ريال سعودي',bg:'var(--color-bg)',fg:'var(--color-text)'}].map((k,i)=>(
+            <div key={i} className="card" style={{padding:24,background:k.bg,color:k.fg}}>
+              <div style={{fontSize:13,opacity:.75,marginBottom:10}}>{k.l}</div>
+              <div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:42,lineHeight:1}}>{k.v}</div>
+              <div style={{fontSize:'12.5px',opacity:.6,marginTop:6}}>{k.h}</div>
+            </div>
+          ))}
+        </div>
+        <div className="grid-2" style={{display:'grid',gridTemplateColumns:'1.4fr 1fr',gap:24}}>
+          <div className="card" style={{padding:26,background:'var(--color-bg)'}}>
+            <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:22,color:'var(--green)',margin:'0 0 16px'}}>اشتراكات قريبة الانتهاء</h3>
+            <table className="table"><thead><tr><th>المشترك</th><th>الاشتراك</th><th>ينتهي في</th><th>المتبقي</th><th></th></tr></thead>
+              <tbody>{soon.sort((a,b)=>a.end.localeCompare(b.end)).map(s=>{const d=daysLeft(s.end);return(
+                <tr key={s.id}><td style={{fontWeight:700}}>{nameOf(s.subscriberId)}</td><td>{PLANS[s.plan].label}</td><td dir="ltr">{fmt(s.end)}</td>
+                  <td><span style={pill(d)}>{d} يوم</span></td>
+                  <td><button className="btn-outline" style={{fontSize:'12.5px',padding:'5px 12px'}} onClick={()=>window.open('https://wa.me/966'+phoneOf(s.subscriberId).replace(/^0/,'')+'?text='+encodeURIComponent('مرحباً '+nameOf(s.subscriberId)+' 🌿\nاشتراكك ينتهي '+fmt(s.end)),'_blank')}>تذكير واتساب</button></td>
+                </tr>);})}</tbody>
+            </table>
+          </div>
+          <div className="card" style={{padding:26,background:'var(--color-bg)'}}>
+            <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:22,color:'var(--green)',margin:'0 0 16px'}}>مستحقات غير مدفوعة</h3>
+            {unpaid.map(s=>(
+              <div key={s.id} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 0',borderBottom:'1px solid var(--color-divider)'}}>
+                <div style={{flex:1}}><div style={{fontWeight:700,fontSize:'14.5px'}}>{nameOf(s.subscriberId)}</div><div style={{fontSize:'12.5px',color:'var(--color-accent-600)'}}>{PLANS[s.plan].label}</div></div>
+                <div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:19,color:'#8A2F1E'}}>{s.total} ر.س</div>
+                <button className="btn-green" style={{fontSize:'12.5px',padding:'6px 12px'}} onClick={()=>persist({subscriptions:subscriptions.map(x=>x.id===s.id?{...x,paid:'paid'}:x)})}>تم الدفع</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </>}
+
+      {/* Subscribers */}
+      {tab==='subs' && <div className="card" style={{padding:26,background:'var(--color-bg)'}}>
+        <div style={{display:'flex',gap:14,alignItems:'center',marginBottom:20,flexWrap:'wrap'}}>
+          <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:24,color:'var(--green)'}}>المشتركون</h3>
+          <input className="input" style={{maxWidth:280,marginInlineStart:'auto'}} placeholder="بحث بالاسم أو الجوال" value={search} onChange={e=>setSearch(e.target.value)}/>
+          <button className="btn-green" style={{fontSize:'13.5px',padding:'10px 18px'}} onClick={()=>setTab('new')}>+ مشترك جديد</button>
+        </div>
+        <div style={{overflowX:'auto'}}>
+        <table className="table"><thead><tr><th>الاسم</th><th>الهوية</th><th>الجوال</th><th>الاشتراك</th><th>البداية</th><th>الانتهاء</th><th>المتبقي</th><th>الدفع</th><th>إجراءات</th></tr></thead>
+          <tbody>{filtered.map(sb=>{const s=subOf(sb.id);const d=s?daysLeft(s.end):0;return(
+            <tr key={sb.id}>
+              <td style={{fontWeight:700}}>{sb.name}</td><td dir="ltr">{sb.nid}</td><td dir="ltr">{sb.phone}</td>
+              <td>{s?PLANS[s.plan].label+' · '+s.duration+' يوم':'—'}</td><td dir="ltr">{s?fmt(s.start):'—'}</td><td dir="ltr">{s?fmt(s.end):'—'}</td>
+              <td>{s?<span style={pill(d)}>{d>0?d+' يوم':'منتهي'}</span>:'—'}</td>
+              <td>{s?<button onClick={()=>persist({subscriptions:subscriptions.map(x=>x.id===s.id?{...x,paid:s.paid==='paid'?'unpaid':s.paid==='unpaid'?'partial':'paid'}:x)})} style={{cursor:'pointer',fontFamily:'var(--font-body)',fontSize:'12.5px',fontWeight:700,padding:'5px 12px',border:'1px solid '+(s.paid==='paid'?'#1FA855':s.paid==='partial'?'#B99B54':'#C9714F'),background:'transparent',color:s.paid==='paid'?'#178A45':s.paid==='partial'?'#7C6634':'#8A2F1E'}}>{s.paid==='paid'?'مدفوع':s.paid==='partial'?'جزئي':'غير مدفوع'}</button>:'—'}</td>
+              <td><div style={{display:'flex',gap:6}}>
+                <button className="btn-outline" style={{fontSize:'12.5px',padding:'5px 9px'}} onClick={()=>{setScreen('portal');setPortalId(sb.id);setPortalQuery(sb.phone);}}>الوجبات</button>
+                <button className="btn-danger" style={{fontSize:'12.5px',padding:'5px 9px'}} onClick={()=>{if(window.confirm('حذف '+sb.name+'؟')){const p={...plans};delete p[sb.id];persist({subscribers:subscribers.filter(x=>x.id!==sb.id),subscriptions:subscriptions.filter(x=>x.subscriberId!==sb.id),plans:p});}}}>حذف</button>
+              </div></td>
+            </tr>);})}</tbody>
+        </table>
+        </div>
+        {filtered.length===0 && <div style={{padding:38,textAlign:'center',color:'var(--color-accent-600)'}}>لا توجد نتائج</div>}
+      </div>}
+
+      {/* New Subscription */}
+      {tab==='new' && <div className="grid-2" style={{display:'grid',gridTemplateColumns:'1.25fr .75fr',gap:24,alignItems:'start'}}>
+        <div className="card" style={{padding:30,background:'var(--color-bg)'}}>
+          <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:24,color:'var(--green)',margin:'0 0 22px'}}>إضافة مشترك / اشتراك جديد</h3>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16}}>
+            <div className="field"><label>رقم الهوية</label><input className="input" dir="ltr" maxLength={10} value={form.nid} onChange={e=>{setForm({...form,nid:e.target.value});setFormError('');}}/></div>
+            <div className="field"><label>رقم الجوال</label><input className="input" dir="ltr" maxLength={10} value={form.phone} onChange={e=>{setForm({...form,phone:e.target.value});setFormError('');}}/></div>
+            <div className="field"><label>الاسم</label><input className="input" value={form.name} onChange={e=>{setForm({...form,name:e.target.value});setFormError('');}}/></div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginTop:8}}>
+            <div className="field"><label>نوع الاشتراك</label><select className="input" value={form.plan} onChange={e=>setForm({...form,plan:e.target.value})}><option value="3">ثلاث وجبات</option><option value="2">وجبتين</option><option value="1">وجبة واحدة</option></select></div>
+            <div className="field"><label>المدة</label><select className="input" value={form.duration} onChange={e=>setForm({...form,duration:e.target.value})}><option value="24">٢٤ يوم</option><option value="6">٦ أيام</option></select></div>
+            <div className="field"><label>تاريخ البداية</label><input className="input" type="date" dir="ltr" value={form.start} onChange={e=>setForm({...form,start:e.target.value})}/></div>
+            <div className="field"><label>حالة الدفع</label><select className="input" value={form.paid} onChange={e=>setForm({...form,paid:e.target.value})}><option value="paid">تم الدفع</option><option value="unpaid">لم يُدفع</option><option value="partial">دفعة جزئية</option></select></div>
+          </div>
+          <div style={{marginTop:18,paddingTop:18,borderTop:'1px solid var(--color-divider)'}}>
+            <div style={{fontWeight:700,fontSize:'14.5px',color:'var(--green)',marginBottom:12}}>توزيع البروتينات في الأسبوع (٧ أيام)</div>
+            <div className="grid-4" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14}}>
+              <div className="field"><label>دجاج</label><input className="input" type="number" min={0} max={7} value={form.chicken} onChange={e=>setForm({...form,chicken:Math.max(0,Math.min(7,Number(e.target.value)||0))})}/></div>
+              <div className="field"><label>لحم</label><input className="input" type="number" min={0} max={7} value={form.meat} onChange={e=>setForm({...form,meat:Math.max(0,Math.min(7,Number(e.target.value)||0))})}/></div>
+              <div className="field"><label>سمك</label><input className="input" type="number" min={0} max={7} value={form.fish} onChange={e=>setForm({...form,fish:Math.max(0,Math.min(7,Number(e.target.value)||0))})}/></div>
+              <div className="field"><label>نباتي</label><input className="input" type="number" min={0} max={7} value={form.veg} onChange={e=>setForm({...form,veg:Math.max(0,Math.min(7,Number(e.target.value)||0))})}/></div>
+            </div>
+            <div style={{fontSize:'12.5px',color:protTotal===7?'var(--color-accent-600)':'#8A2F1E',marginTop:8}}>{protTotal===7?'✓ المجموع ٧ أيام — التوزيع مضبوط':'المجموع الحالي '+protTotal+' — يجب أن يساوي ٧'}</div>
+          </div>
+          <div style={{display:'flex',gap:26,marginTop:20}}>
+            <label style={{display:'flex',alignItems:'center',gap:9,cursor:'pointer',fontSize:'14.5px'}}><input type="checkbox" checked={form.delivery} onChange={e=>setForm({...form,delivery:e.target.checked})} style={{width:17,height:17,accentColor:'var(--green)'}}/>التوصيل (+{DELIVERY_PRICE})</label>
+            <label style={{display:'flex',alignItems:'center',gap:9,cursor:'pointer',fontSize:'14.5px'}}><input type="checkbox" checked={form.salad} onChange={e=>setForm({...form,salad:e.target.checked})} style={{width:17,height:17,accentColor:'var(--green)'}}/>السلطة (+{SALAD_PRICE})</label>
+          </div>
+          {formError && <div className="error-box">{formError}</div>}
+        </div>
+        <div className="card" style={{padding:30,background:'var(--green)',color:'var(--cream)',borderColor:'var(--gold)',position:'sticky',top:110}}>
+          <div style={{fontSize:13,letterSpacing:2,color:'var(--gold)',fontWeight:700,marginBottom:20}}>ملخص الاشتراك</div>
+          {[{k:'الباقة',v:PLANS[form.plan].label},{k:'المدة',v:form.duration+' يوم'},{k:'سعر الباقة',v:PLANS[form.plan][Number(form.duration)]+' ر.س'},{k:'التوصيل',v:form.delivery?DELIVERY_PRICE+' ر.س':'بدون'},{k:'السلطة',v:form.salad?SALAD_PRICE+' ر.س':'بدون'}].map((s,i)=>(
+            <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'9px 0',borderBottom:'1px solid rgba(245,242,234,.14)',fontSize:'14.5px'}}><span style={{color:'rgba(245,242,234,.7)'}}>{s.k}</span><span style={{fontWeight:700}}>{s.v}</span></div>
+          ))}
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginTop:20}}>
+            <span style={{color:'var(--gold)',fontSize:15}}>الإجمالي</span>
+            <span style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:40}}>{formTotal} <span style={{fontSize:15}}>ر.س</span></span>
+          </div>
+          <div style={{fontSize:13,color:'rgba(245,242,234,.6)',marginTop:6}}>ينتهي في {fmt(iso(addDays(new Date(form.start),Number(form.duration))))}</div>
+          <button className="btn-gold" style={{marginTop:24,width:'100%',fontSize:15,padding:14}} onClick={saveSub}>حفظ الاشتراك وتوزيع الوجبات</button>
+        </div>
+      </div>}
+
+      {/* Meal Bank */}
+      {tab==='bank' && <>
+        <div className="card" style={{padding:26,background:'var(--color-bg)',marginBottom:24}}>
+          <div style={{display:'flex',alignItems:'center',gap:14,flexWrap:'wrap',marginBottom:18}}>
+            <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:24,color:'var(--green)'}}>بنك الوجبات من الشيف</h3>
+            <div className="seg" style={{marginInlineStart:'auto'}}><button className={cycle===1?'is-on':''} onClick={()=>setCycle(1)}>أسبوع واحد</button><button className={cycle===2?'is-on':''} onClick={()=>setCycle(2)}>أسبوعان</button></div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr .8fr .8fr .8fr .9fr auto',gap:12,alignItems:'end',padding:18,border:'1px dashed var(--color-accent-400)',background:'var(--color-accent-100)'}}>
+            <div className="field"><label>اسم الوجبة</label><input className="input" value={meal.name} onChange={e=>setMeal({...meal,name:e.target.value})}/></div>
+            <div className="field"><label>النوع</label><select className="input" value={meal.type} onChange={e=>setMeal({...meal,type:e.target.value})}><option value="chicken">دجاج</option><option value="meat">لحم</option><option value="fish">سمك</option><option value="veg">نباتي</option></select></div>
+            <div className="field"><label>الوجبة</label><select className="input" value={meal.slot} onChange={e=>setMeal({...meal,slot:e.target.value})}><option value="lunch">غداء</option><option value="breakfast">فطور</option><option value="dinner">عشاء</option></select></div>
+            <div className="field"><label>سعرات</label><input className="input" type="number" value={meal.kcal} onChange={e=>setMeal({...meal,kcal:e.target.value})}/></div>
+            <div className="field"><label>بروتين غ</label><input className="input" type="number" value={meal.protein} onChange={e=>setMeal({...meal,protein:e.target.value})}/></div>
+            <div className="field"><label>الأسبوع</label><select className="input" value={meal.week} onChange={e=>setMeal({...meal,week:e.target.value})}><option value="1">الأسبوع ١</option><option value="2">الأسبوع ٢</option></select></div>
+            <button className="btn-green" style={{fontSize:'13.5px',padding:'11px 20px',height:42}} onClick={addMeal}>إضافة</button>
+          </div>
+        </div>
+        <div className="grid-4" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:18}}>
+          {meals.filter(m=>cycle===2?true:Number(m.week)===1).map(m=>(
+            <div key={m.id} className="card" style={{background:'var(--color-bg)',display:'flex',flexDirection:'column'}}>
+              <div style={{padding:16,display:'flex',flexDirection:'column',gap:9,flex:1}}>
+                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}><span className="tag tag-accent">{TYPES[m.type]}</span><span className="tag tag-outline">{SLOTS[m.slot]}</span><span className="tag tag-neutral">أسبوع {m.week}</span></div>
+                <div style={{fontWeight:700,fontSize:15,color:'var(--green)',lineHeight:1.4}}>{m.name}</div>
+                <div style={{fontSize:'12.5px',color:'var(--color-accent-600)',marginTop:'auto'}}>{m.kcal} سعرة · {m.protein}غ بروتين</div>
+                <button className="btn-danger" style={{fontSize:'12.5px',padding:6}} onClick={()=>{if(window.confirm('حذف '+m.name+'؟'))persist({meals:meals.filter(x=>x.id!==m.id)});}}>حذف</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>}
+
+      {/* Revenue */}
+      {tab==='rev' && <>
+        <div className="grid-3" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:20,marginBottom:26}}>
+          {[{l:'إيراد الشهر الحالي',v:revenue+' ر.س'},{l:'متوسط قيمة الاشتراك',v:(subscriptions.length?Math.round(subscriptions.reduce((a,s)=>a+s.total,0)/subscriptions.length):0)+' ر.س'},{l:'مستحقات معلّقة',v:unpaid.reduce((a,s)=>a+s.total,0)+' ر.س'}].map((k,i)=>(
+            <div key={i} className="card" style={{padding:24,background:'var(--color-bg)'}}><div style={{fontSize:13,color:'var(--color-accent-600)',marginBottom:10}}>{k.l}</div><div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:40,color:'var(--green)',lineHeight:1}}>{k.v}</div></div>
+          ))}
+        </div>
+        <div className="card" style={{padding:26,background:'var(--color-bg)'}}>
+          <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:22,color:'var(--green)',margin:'0 0 18px'}}>الإيرادات الشهرية</h3>
+          {(()=>{const base=Math.max(1,revenue);const series=[.62,.71,.68,.84,.93,1].map(r=>Math.round(base*r));const mx=Math.max(...series);const months=['فبراير','مارس','أبريل','مايو','يونيو','يوليو'];return(
+            <><div style={{display:'flex',alignItems:'flex-end',gap:18,height:230,padding:'0 6px',borderBottom:'1px solid var(--color-divider)'}}>
+              {months.map((label,i)=>(<div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:8,height:'100%',justifyContent:'flex-end'}}>
+                <div style={{fontSize:'12.5px',fontWeight:700,color:'var(--green)'}}>{series[i]}</div>
+                <div style={{width:'100%',background:i===5?'var(--gold)':'var(--green)',height:Math.round(series[i]/mx*100)+'%'}}/>
+              </div>))}
+            </div>
+            <div style={{display:'flex',gap:18,padding:'10px 6px 0'}}>{months.map((l,i)=>(<div key={i} style={{flex:1,textAlign:'center',fontSize:'12.5px',color:'var(--color-accent-600)'}}>{l}</div>))}</div></>
+          );})()}
+        </div>
+        <div className="card" style={{padding:26,background:'var(--color-bg)',marginTop:24}}>
+          <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:22,color:'var(--green)',margin:'0 0 18px'}}>تفصيل الاشتراكات</h3>
+          <table className="table"><thead><tr><th>الباقة</th><th>عدد المشتركين</th><th>الإيراد</th><th>النسبة</th></tr></thead>
+            <tbody>{['3','2','1'].map(k=>{const list=subscriptions.filter(s=>s.plan===k);const total=list.reduce((a,s)=>a+s.total,0);const all=subscriptions.reduce((a,s)=>a+s.total,0)||1;return(
+              <tr key={k}><td style={{fontWeight:700}}>{PLANS[k].label}</td><td>{list.length}</td><td>{total} ر.س</td><td>{Math.round(total/all*100)}%</td></tr>
+            );})}</tbody>
+          </table>
+        </div>
+      </>}
+    </div>);
+  };
+
+  /* ─── CHEF ─── */
+  const Chef=()=>{
+    const day=Number(chefDay);
+    const activeSubscribers=subscribers.filter(sb=>{const s=subOf(sb.id);return s&&daysLeft(s.end)>0;});
+    const counts={};
+    const chefRows=activeSubscribers.map(sb=>{
+      const s=subOf(sb.id);const dayPlan=(plans[sb.id]||[])[day]||[];
+      const byslot={breakfast:'—',lunch:'—',dinner:'—'};
+      dayPlan.forEach(id=>{const m=mealById(id);if(!m)return;byslot[m.slot]=m.name;counts[id]=(counts[id]||0)+1;});
+      return{name:sb.name,breakfast:byslot.breakfast,lunch:byslot.lunch,dinner:byslot.dinner,delivery:s.delivery?'نعم':'استلام'};
+    });
+    const prepCounts=Object.keys(counts).map(id=>{const m=mealById(id)||{};return{name:m.name,typeLabel:TYPES[m.type],slotLabel:SLOTS[m.slot],count:counts[id]};}).sort((a,b)=>b.count-a.count);
+    const totalMeals=Object.values(counts).reduce((a,c)=>a+c,0);
+
+    return(
+    <div style={{maxWidth:1400,margin:'0 auto',padding:'28px 24px 80px'}}>
+      <div style={{display:'flex',alignItems:'flex-end',gap:20,marginBottom:26,flexWrap:'wrap'}}>
+        <div>
+          <div style={{fontSize:'12.5px',letterSpacing:'2.6px',color:'var(--color-accent-2-600)',fontWeight:700}}>لوحة الشيف</div>
+          <h2 style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:38,color:'var(--green)',margin:'4px 0 0'}}>تحضير اليوم — {DAYS[day]}</h2>
+        </div>
+        <div style={{marginInlineStart:'auto',display:'flex',gap:10}}>
+          <select className="input" style={{maxWidth:180}} value={chefDay} onChange={e=>setChefDay(Number(e.target.value))}>{DAYS.map((d,i)=><option key={i} value={i}>{d}</option>)}</select>
+          <button className="btn-green" style={{fontSize:'13.5px',padding:'11px 20px'}} onClick={()=>{
+            const rows=chefRows.map(r=>'<tr><td>'+r.name+'</td><td>'+r.breakfast+'</td><td>'+r.lunch+'</td><td>'+r.dinner+'</td><td>'+r.delivery+'</td></tr>').join('');
+            const prep=prepCounts.map(c=>'<tr><td>'+c.name+'</td><td>'+c.typeLabel+'</td><td>'+c.slotLabel+'</td><td>'+c.count+'</td></tr>').join('');
+            printSheet('تحضير '+DAYS[day],'<h3>كميات التحضير</h3><table><thead><tr><th>الوجبة</th><th>النوع</th><th>الفترة</th><th>العدد</th></tr></thead><tbody>'+prep+'</tbody></table><h3>المشتركون</h3><table><thead><tr><th>المشترك</th><th>الفطور</th><th>الغداء</th><th>العشاء</th><th>التوصيل</th></tr></thead><tbody>'+rows+'</tbody></table>');
+          }}>طباعة / PDF</button>
+        </div>
+      </div>
+      <div className="grid-4" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:18,marginBottom:26}}>
+        {[{l:'مشتركون اليوم',v:activeSubscribers.length,bg:'var(--green)',fg:'var(--cream)'},{l:'إجمالي الوجبات',v:totalMeals,bg:'var(--color-accent-2-200)',fg:'var(--color-accent-2-900)'},{l:'طلبات توصيل',v:chefRows.filter(r=>r.delivery==='نعم').length,bg:'var(--color-bg)',fg:'var(--color-text)'},{l:'أصناف للتحضير',v:Object.keys(counts).length,bg:'var(--color-bg)',fg:'var(--color-text)'}].map((k,i)=>(
+          <div key={i} className="card" style={{padding:22,background:k.bg,color:k.fg}}><div style={{fontSize:13,opacity:.72,marginBottom:8}}>{k.l}</div><div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:38,lineHeight:1}}>{k.v}</div></div>
+        ))}
+      </div>
+      <div className="grid-2" style={{display:'grid',gridTemplateColumns:'1fr 1.35fr',gap:24,alignItems:'start'}}>
+        <div className="card" style={{padding:26,background:'var(--color-bg)'}}>
+          <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:22,color:'var(--green)',margin:'0 0 16px'}}>كميات التحضير</h3>
+          {prepCounts.map((c,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',gap:14,padding:'13px 0',borderBottom:'1px solid var(--color-divider)'}}>
+              <span className="tag tag-accent">{c.slotLabel}</span>
+              <div style={{flex:1}}><div style={{fontWeight:700,fontSize:15,color:'var(--green)'}}>{c.name}</div><div style={{fontSize:'12.5px',color:'var(--color-accent-600)'}}>{c.typeLabel}</div></div>
+              <div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:30,color:'var(--green)'}}>{c.count}</div>
+            </div>
+          ))}
+        </div>
+        <div className="card" style={{padding:26,background:'var(--color-bg)'}}>
+          <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:22,color:'var(--green)',margin:'0 0 16px'}}>قائمة المشتركين اليوم</h3>
+          <div style={{overflowX:'auto'}}>
+          <table className="table"><thead><tr><th>المشترك</th><th>الفطور</th><th>الغداء</th><th>العشاء</th><th>التوصيل</th></tr></thead>
+            <tbody>{chefRows.map((r,i)=>(<tr key={i}><td style={{fontWeight:700}}>{r.name}</td><td>{r.breakfast}</td><td>{r.lunch}</td><td>{r.dinner}</td><td>{r.delivery}</td></tr>))}</tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+    </div>);
+  };
+
+  /* ─── PORTAL ─── */
+  const Portal=()=>{
+    const psb=portalId?subscribers.find(s=>s.id===portalId):null;
+    if(!psb) return(
+      <div style={{maxWidth:520,margin:'32px auto',padding:'44px 24px'}}>
+        <div className="card" style={{padding:40,background:'var(--color-bg)',textAlign:'center'}}>
+          <div style={{width:62,height:62,border:'2px solid var(--gold)',borderRadius:'50%',background:'var(--green)',color:'var(--cream)',display:'grid',placeItems:'center',fontFamily:'var(--font-heading)',fontWeight:900,fontSize:24,margin:'0 auto 18px'}}>DD</div>
+          <h2 style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:30,color:'var(--green)',margin:'0 0 6px'}}>بوابة المشترك</h2>
+          <p style={{fontSize:'14.5px',color:'var(--color-accent-700)',fontWeight:300,margin:'0 0 24px'}}>أدخل رقم الجوال أو رقم الهوية</p>
+          <input className="input" dir="ltr" style={{textAlign:'center',fontSize:17}} value={portalQuery} onChange={e=>{setPortalQuery(e.target.value);setPortalError('');}} onKeyDown={e=>e.key==='Enter'&&portalLogin()} placeholder="05XXXXXXXX"/>
+          {portalError && <div className="error-box">{portalError}</div>}
+          <button className="btn-green" style={{marginTop:18,width:'100%',fontSize:15,padding:14}} onClick={portalLogin}>عرض اشتراكي</button>
+          <div style={{marginTop:18,fontSize:'12.5px',color:'var(--color-accent-600)'}}>جرّب: 0551234567</div>
+        </div>
+      </div>
+    );
+    const s=subOf(psb.id)||{plan:'1',duration:24,start:iso(new Date()),end:iso(new Date()),paid:'unpaid'};
+    const left=daysLeft(s.end);
+    const week=DAYS.map((d,i)=>({
+      day:d,headBg:i===new Date().getDay()?'var(--gold)':'var(--green)',
+      meals:((plans[psb.id]||[])[i]||[]).map(id=>{const m=mealById(id)||{};return{name:m.name||'—',kcal:m.kcal||0,slotLabel:SLOTS[m.slot]||''};})
+    }));
+    return(
+    <div style={{maxWidth:1180,margin:'0 auto',padding:'44px 24px 80px'}}>
+      <div className="card" style={{padding:34,background:'var(--green)',color:'var(--cream)',borderColor:'var(--gold)',marginBottom:24}}>
+        <div className="grid-3" style={{display:'grid',gridTemplateColumns:'1.4fr 1fr auto',gap:30,alignItems:'center'}}>
+          <div>
+            <div style={{fontSize:13,letterSpacing:2,color:'var(--gold)',marginBottom:8}}>أهلاً بك</div>
+            <div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:40,lineHeight:1.1}}>{psb.name}</div>
+            <div style={{fontSize:'14.5px',color:'rgba(245,242,234,.7)',marginTop:8}}>{PLANS[s.plan].label} · {s.paid==='paid'?'مدفوع ✓':s.paid==='partial'?'دفعة جزئية':'غير مدفوع'}</div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+            <div style={{border:'1px solid rgba(185,155,84,.45)',padding:14}}><div style={{fontSize:12,color:'var(--gold)'}}>ينتهي في</div><div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:22}} dir="ltr">{fmt(s.end)}</div></div>
+            <div style={{border:'1px solid rgba(185,155,84,.45)',padding:14}}><div style={{fontSize:12,color:'var(--gold)'}}>المتبقي</div><div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:22}}>{left} يوم</div></div>
+          </div>
+          <div style={{background:'var(--cream)',padding:8}}><img src={qr(location.href.split('#')[0]+'#portal-'+psb.phone,200)} alt="QR" style={{width:96,height:96,display:'block'}}/></div>
+        </div>
+        <div style={{height:6,background:'rgba(245,242,234,.16)',marginTop:26}}><div style={{height:'100%',background:'var(--gold)',width:Math.round((s.duration-left)/s.duration*100)+'%'}}/></div>
+        <div style={{display:'flex',gap:12,marginTop:22,flexWrap:'wrap'}}>
+          <button className="btn-gold" style={{fontSize:14,padding:'12px 24px'}} onClick={()=>{
+            const rows=week.map(d=>'<tr><td style="font-weight:700">'+d.day+'</td>'+['فطور','غداء','عشاء'].map(sl=>{const m=d.meals.find(x=>x.slotLabel===sl);return '<td>'+(m?m.name+' ('+m.kcal+')':'—')+'</td>';}).join('')+'</tr>').join('');
+            printSheet('قائمة وجبات '+psb.name,'<table><thead><tr><th>اليوم</th><th>الفطور</th><th>الغداء</th><th>العشاء</th></tr></thead><tbody>'+rows+'</tbody></table>');
+          }}>تصدير PDF</button>
+          <button className="btn-wa" style={{fontSize:14,padding:'12px 24px'}} onClick={()=>{
+            const lines=week.map(d=>d.day+': '+(d.meals.map(m=>m.name).join(' / ')||'—')).join('\n');
+            window.open('https://wa.me/966'+psb.phone.replace(/^0/,'')+'?text='+encodeURIComponent('مرحباً '+psb.name+' 🌿\nوجباتك لهذا الأسبوع:\n\n'+lines),'_blank');
+          }}>إرسال عبر واتساب</button>
+          <button onClick={()=>{setPortalId(null);setPortalQuery('');}} style={{background:'transparent',border:'1px solid rgba(245,242,234,.4)',color:'var(--cream)',fontFamily:'var(--font-body)',fontSize:14,padding:'12px 20px',cursor:'pointer'}}>خروج</button>
+        </div>
+      </div>
+      <h3 style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:28,color:'var(--green)',margin:'0 0 18px'}}>وجباتك هذا الأسبوع</h3>
+      <div className="grid-7" style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:14}}>
+        {week.map((d,i)=>(
+          <div key={i} className="card" style={{background:'var(--color-bg)',display:'flex',flexDirection:'column'}}>
+            <div style={{background:d.headBg,color:'var(--cream)',padding:9,textAlign:'center',fontFamily:'var(--font-heading)',fontWeight:700,fontSize:15}}>{d.day}</div>
+            <div style={{padding:12,display:'flex',flexDirection:'column',gap:10}}>
+              {d.meals.map((m,j)=>(
+                <div key={j} style={{borderBottom:'1px solid var(--color-divider)',paddingBottom:9}}>
+                  <div style={{fontSize:11,color:'var(--color-accent-2-600)',fontWeight:700,marginBottom:3}}>{m.slotLabel}</div>
+                  <div style={{fontSize:13,fontWeight:600,lineHeight:1.4,color:'var(--green)'}}>{m.name}</div>
+                  <div style={{fontSize:'11.5px',color:'var(--color-accent-600)',marginTop:3}}>{m.kcal} سعرة</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>);
+  };
+
+  return(
+    <div style={{minHeight:'100vh',background:'var(--color-bg)',color:'var(--color-text)',fontFamily:'var(--font-body)'}}>
+      {Header()}
+      {screen==='home' && Home()}
+      {screen==='login' && Login()}
+      {screen==='admin' && Admin()}
+      {screen==='chef' && Chef()}
+      {screen==='portal' && Portal()}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
