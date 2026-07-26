@@ -82,8 +82,40 @@ table.table td{padding:10px 12px;border-bottom:1px solid var(--color-divider);fo
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.26.0/babel.min.js"></script>
+
+<!-- ═══════════ إعدادات Firebase ═══════════
+     تأكد من نسخ القيم من:
+     Firebase Console → ⚙️ Project settings → Your apps → SDK setup and configuration
+     ثم استبدل القيم أدناه بالكامل.
+-->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBP0bAdlzioBRSUElitZ4CXs02llOtkGxM",
+  authDomain: "delicious-diet-631b2.firebaseapp.com",
+  projectId: "delicious-diet-631b2"
+};
+
+try {
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  await signInAnonymously(getAuth(app));
+  window.__fb = { db, doc, onSnapshot, setDoc };
+  window.dispatchEvent(new Event('fb-ready'));
+} catch (e) {
+  console.error('[Firebase] فشل الاتصال:', e);
+  window.__fbError = e.message;
+  window.dispatchEvent(new Event('fb-failed'));
+}
+</script>
+
 <script type="text/babel" data-presets="react">
-const { useState, useEffect, useCallback, useMemo } = React;
+const { useState, useEffect, useCallback, useRef } = React;
+
+const DOC_ID = 'delicious-diet';
 
 const PLANS = {
   '3': { label: 'ثلاث وجبات', sub: 'فطور · غداء · عشاء', icon: '🍽', 24: 1250, 6: 330 },
@@ -213,12 +245,50 @@ function App(){
     try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.subscribers)return d;}catch(e){}
     return seedData();
   });
+  const [sync,setSync]=useState('...');
+  const dataRef=useRef(data);
+  dataRef.current=data;
+
+  // مزامنة لحظية مع Firestore
+  useEffect(()=>{
+    let unsub=null;
+    const start=()=>{
+      const fb=window.__fb;
+      if(!fb){setSync('محلي');return;}
+      const ref=fb.doc(fb.db,'sites',DOC_ID);
+      unsub=fb.onSnapshot(ref,snap=>{
+        if(snap.exists()){
+          const d=snap.data();
+          if(d&&Array.isArray(d.subscribers)){
+            const next={subscribers:d.subscribers,subscriptions:d.subscriptions||[],meals:d.meals||[],plans:d.plans||{}};
+            setData(next);
+            try{localStorage.setItem(KEY,JSON.stringify(next));}catch(e){}
+          }
+        }else{
+          fb.setDoc(ref,dataRef.current).catch(e=>console.error(e));
+        }
+        setSync('سحابي');
+      },err=>{console.error('[Firestore]',err);setSync('خطأ');});
+    };
+    if(window.__fb)start();
+    else{
+      window.addEventListener('fb-ready',start,{once:true});
+      window.addEventListener('fb-failed',()=>setSync('محلي'),{once:true});
+      setTimeout(()=>{if(!window.__fb)setSync('محلي');},8000);
+    }
+    return ()=>{if(unsub)unsub();};
+  },[]);
 
   const persist=useCallback(patch=>{
-    const next={...data,...patch};
-    try{localStorage.setItem(KEY,JSON.stringify(next));}catch(e){}
+    const next={...dataRef.current,...patch};
     setData(next);
-  },[data]);
+    try{localStorage.setItem(KEY,JSON.stringify(next));}catch(e){}
+    const fb=window.__fb;
+    if(fb){
+      fb.setDoc(fb.doc(fb.db,'sites',DOC_ID),next)
+        .catch(e=>{console.error('[Firestore] فشل الحفظ:',e);setSync('خطأ');});
+    }
+  },[]);
 
   const {subscribers,subscriptions,meals,plans}=data;
   const mealById=id=>meals.find(m=>m.id===id);
@@ -329,6 +399,10 @@ function App(){
           <a href="#contact" style={{color:'rgba(245,242,234,.82)'}} onClick={()=>setScreen('home')}>تواصل</a>
         </nav>
         <div style={{flex:1}}/>
+        <div title={"حالة البيانات: "+sync} style={{display:'flex',alignItems:'center',gap:7,fontSize:12,color:sync==='سحابي'?'var(--gold)':sync==='خطأ'?'#E8A08A':'rgba(245,242,234,.5)',border:'1px solid rgba(185,155,84,.3)',padding:'5px 11px'}}>
+          <span style={{width:7,height:7,borderRadius:'50%',background:sync==='سحابي'?'#5BC98A':sync==='خطأ'?'#C9714F':'rgba(245,242,234,.4)',animation:sync==='...'?'ddPulse 1.4s infinite':'none'}}/>
+          {sync}
+        </div>
         <div className="desk-btns" style={{display:'flex',gap:10}}>
           <button onClick={()=>setScreen('portal')} style={{background:'transparent',border:'1px solid rgba(245,242,234,.35)',color:'var(--cream)',fontFamily:'var(--font-body)',fontWeight:600,fontSize:13,padding:'8px 16px',cursor:'pointer'}}>بوابة المشترك</button>
           <button onClick={()=>{setScreen('login');setLoginError('');}} className="btn-gold" style={{fontSize:13,padding:'8px 18px'}}>دخول الإدارة</button>
