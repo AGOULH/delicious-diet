@@ -118,11 +118,23 @@ const { useState, useEffect, useCallback, useRef } = React;
 const DOC_ID = 'delicious-diet';
 
 // Firestore لا يدعم المصفوفات المتداخلة — نحوّل plans إلى نص عند الحفظ
+const DEFAULT_PRICING = {
+  '3': { 24: 1250, 6: 330 },
+  '2': { 24: 850, 6: 225 },
+  '1': { 24: 480, 6: 130 },
+  delivery: 150, salad: 100
+};
+const DEFAULT_PROMO = { name:'', percent:0, start:'', end:'', enabled:false };
 const toCloud = d => ({
   subscribers: d.subscribers || [],
   subscriptions: d.subscriptions || [],
   meals: d.meals || [],
-  plansJSON: JSON.stringify(d.plans || {})
+  plansJSON: JSON.stringify(d.plans || {}),
+  pricing: d.pricing || DEFAULT_PRICING,
+  accounts: d.accounts || [],
+  ownerPin: d.ownerPin || '1234',
+  testimonials: d.testimonials || [],
+  promo: d.promo || DEFAULT_PROMO
 });
 const fromCloud = d => ({
   subscribers: d.subscribers || [],
@@ -131,20 +143,24 @@ const fromCloud = d => ({
   plans: (() => {
     try { return d.plansJSON ? JSON.parse(d.plansJSON) : (d.plans || {}); }
     catch (e) { return {}; }
-  })()
+  })(),
+  pricing: d.pricing || DEFAULT_PRICING,
+  accounts: d.accounts || [],
+  ownerPin: d.ownerPin || '1234',
+  testimonials: d.testimonials || [],
+  promo: d.promo || DEFAULT_PROMO
 });
 
 const PLANS = {
-  '3': { label: 'ثلاث وجبات', sub: 'فطور · غداء · عشاء', icon: '🍽', 24: 1250, 6: 330 },
-  '2': { label: 'وجبتين', sub: 'فطور · غداء', icon: '🍴', 24: 850, 6: 225 },
-  '1': { label: 'وجبة واحدة', sub: 'الغداء', icon: '🥄', 24: 480, 6: 130 }
+  '3': { label: 'ثلاث وجبات', sub: 'فطور · غداء · عشاء', icon: '🍽' },
+  '2': { label: 'وجبتين', sub: 'فطور · غداء', icon: '🍴' },
+  '1': { label: 'وجبة واحدة', sub: 'الغداء', icon: '🥄' }
 };
 const DAYS = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 const TYPES = { chicken:'دجاج', meat:'لحم', fish:'سمك', veg:'نباتي' };
 const SLOTS = { breakfast:'فطور', lunch:'غداء', dinner:'عشاء' };
 const WA = '966560250302';
 const KEY = 'dd_state_v3';
-const DELIVERY_PRICE = 150, SALAD_PRICE = 100;
 
 const iso = d => d.toISOString().slice(0,10);
 const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
@@ -152,7 +168,11 @@ const fmt = s => new Date(s).toLocaleDateString('en-GB');
 const daysLeft = end => Math.max(0, Math.ceil((new Date(end)-new Date())/86400000));
 const wa = text => window.open('https://wa.me/'+WA+'?text='+encodeURIComponent(text),'_blank');
 const qr = (txt,sz=200) => 'https://api.qrserver.com/v1/create-qr-code/?size='+sz+'x'+sz+'&margin=0&color=14412F&bgcolor=F5F2EA&data='+encodeURIComponent(txt);
-const price = (plan,dur,del,sal) => PLANS[plan][dur]+(del?DELIVERY_PRICE:0)+(sal?SALAD_PRICE:0);
+const price = (pricing,plan,dur,del,sal,customDays,discountPct) => {
+  let base = dur==='custom' ? Math.round(pricing[plan][24]/24)*Math.max(1,Number(customDays)||1) : pricing[plan][dur];
+  if(discountPct>0) base = Math.round(base*(1-Math.min(100,discountPct)/100));
+  return base+(del?pricing.delivery:0)+(sal?pricing.salad:0);
+};
 const pill = d => ({padding:'3px 10px',fontSize:'12.5px',fontWeight:700,display:'inline-block',background:d<=3?'#FBECE8':d<=7?'var(--color-accent-2-200)':'var(--color-accent-100)',color:d<=3?'#8A2F1E':d<=7?'var(--color-accent-2-900)':'var(--color-accent-800)'});
 
 const SEED_MEALS = [
@@ -219,11 +239,11 @@ function seedData() {
     const sp=specs[i]; const start=addDays(today,sp.offset);
     return {id:'sub'+(i+1),subscriberId:s.id,plan:sp.plan,duration:sp.dur,
       start:iso(start),end:iso(addDays(start,sp.dur)),delivery:i%2===0,salad:i%3===0,paid:sp.paid,
-      proteins:{chicken:3,meat:2,fish:1,veg:1},total:price(sp.plan,sp.dur,i%2===0,i%3===0)};
+      proteins:{chicken:3,meat:2,fish:1,veg:1},total:price(DEFAULT_PRICING,sp.plan,sp.dur,i%2===0,i%3===0)};
   });
   const plans={};
   subscribers.forEach((s,i)=>{plans[s.id]=distribute(subscriptions[i],meals,subscriptions[i].proteins);});
-  return {subscribers,subscriptions,meals,plans};
+  return {subscribers,subscriptions,meals,plans,pricing:DEFAULT_PRICING,accounts:[],ownerPin:'1234',testimonials:[],promo:DEFAULT_PROMO};
 }
 
 function printSheet(title,bodyHtml){
@@ -308,7 +328,22 @@ function App(){
   },[]);
 
   const {subscribers,subscriptions,meals,plans}=data;
+  const pricing=data.pricing||DEFAULT_PRICING;
+  const accounts=data.accounts||[];
+  const ownerPin=data.ownerPin||'1234';
+  const testimonialsData=data.testimonials||[];
+  const promo=data.promo||DEFAULT_PROMO;
+  const todayIso=iso(new Date());
+  const promoActive=!!(promo.enabled && Number(promo.percent)>0 && (!promo.start||todayIso>=promo.start) && (!promo.end||todayIso<=promo.end));
+  const activePromoPercent=promoActive?Number(promo.percent)||0:0;
   const mealById=id=>meals.find(m=>m.id===id);
+  const heroMeals=meals.filter(m=>m.image);
+  const [heroIdx,setHeroIdx]=useState(0);
+  useEffect(()=>{
+    if(heroMeals.length<2)return;
+    const t=setInterval(()=>setHeroIdx(i=>(i+1)%heroMeals.length),10000);
+    return ()=>clearInterval(t);
+  },[heroMeals.length]);
   const subOf=sid=>subscriptions.filter(s=>s.subscriberId===sid).sort((a,b)=>b.start.localeCompare(a.start))[0];
   const activeSubs=subscriptions.filter(s=>daysLeft(s.end)>0);
   const nameOf=id=>(subscribers.find(x=>x.id===id)||{}).name||'—';
@@ -326,27 +361,66 @@ function App(){
   const recPlan=calc.goal==='gain'?'3':kcal>2000?'3':kcal>1600?'2':'1';
 
   // Order form
-  const [order,setOrder]=useState({name:'',phone:'',plan:'3',duration:'24',delivery:true,salad:false});
+  const [order,setOrder]=useState({name:'',phone:'',plan:'3',duration:'24',customDays:'',delivery:true,salad:false});
   const [orderError,setOrderError]=useState('');
-  const orderTotal=price(order.plan,Number(order.duration),order.delivery,order.salad);
+  const orderTotal=price(pricing,order.plan,order.duration==='custom'?'custom':Number(order.duration),order.delivery,order.salad,order.customDays,activePromoPercent);
+  const orderDays=order.duration==='custom'?Math.max(1,Number(order.customDays)||1):Number(order.duration);
 
   // New sub form
-  const blankForm=()=>({nid:'',phone:'',name:'',plan:'3',duration:'24',start:iso(new Date()),paid:'unpaid',delivery:true,salad:false,chicken:3,meat:2,fish:1,veg:1});
+  const blankForm=()=>({nid:'',phone:'',name:'',plan:'3',duration:'24',customDays:'',start:iso(new Date()),paid:'unpaid',delivery:true,salad:false,chicken:3,meat:2,fish:1,veg:1});
   const [form,setForm]=useState(blankForm);
   const [formError,setFormError]=useState('');
   const protTotal=Number(form.chicken)+Number(form.meat)+Number(form.fish)+Number(form.veg);
-  const formTotal=price(form.plan,Number(form.duration),form.delivery,form.salad);
+  const formMatchedSub=subscribers.find(s=>(form.nid.trim()&&s.nid===form.nid.trim())||(form.phone.trim()&&s.phone===form.phone.trim()));
+  const formSubscriberDiscount=Number(formMatchedSub&&formMatchedSub.discount)||0;
+  const formDiscount=Math.max(formSubscriberDiscount,activePromoPercent);
+  const formTotal=price(pricing,form.plan,form.duration==='custom'?'custom':Number(form.duration),form.delivery,form.salad,form.customDays,formDiscount);
+  const formDays=form.duration==='custom'?Math.max(1,Number(form.customDays)||1):Number(form.duration);
 
   // Meal bank
-  const [meal,setMeal]=useState({name:'',type:'chicken',slot:'lunch',kcal:480,protein:40,week:'1'});
+  const [meal,setMeal]=useState({name:'',type:'chicken',slot:'lunch',kcal:480,protein:40,week:'1',image:''});
+  const [mealError,setMealError]=useState('');
+  const [bulkNames,setBulkNames]=useState('');
+  const [bulkMsg,setBulkMsg]=useState('');
+
+  // Pricing (admin)
+  const [priceForm,setPriceForm]=useState(()=>JSON.parse(JSON.stringify(pricing)));
+  const [priceSaved,setPriceSaved]=useState(false);
+  const [promoForm,setPromoForm]=useState(()=>({...DEFAULT_PROMO,...promo}));
+  const [promoSaved,setPromoSaved]=useState(false);
+
+  // Accounts (admin)
+  const [ownerPinForm,setOwnerPinForm]=useState({current:'',next:'',confirm:''});
+  const [ownerPinError,setOwnerPinError]=useState('');
+  const [ownerPinOk,setOwnerPinOk]=useState(false);
+  const [newAccount,setNewAccount]=useState({name:'',role:'reception',pin:''});
+  const [accountError,setAccountError]=useState('');
+  const [revealedAccountId,setRevealedAccountId]=useState(null);
+  const [activeAccountName,setActiveAccountName]=useState('');
 
   // Portal
   const [portalQuery,setPortalQuery]=useState('');
   const [portalId,setPortalId]=useState(null);
   const [portalError,setPortalError]=useState('');
+  const [review,setReview]=useState({stars:5,text:''});
+  const [reviewMsg,setReviewMsg]=useState('');
 
   const doLogin=()=>{
-    if(pin!=='1234')return setLoginError('الرمز السري غير صحيح');
+    let name='صاحب المطعم';
+    if(pendingRole==='owner'){
+      if(pin!==ownerPin)return setLoginError('الرمز السري غير صحيح');
+    } else {
+      const roleAccounts=accounts.filter(a=>a.role===pendingRole);
+      if(roleAccounts.length===0){
+        if(pin!=='1234')return setLoginError('الرمز السري غير صحيح');
+        name=pendingRole==='chef'?'الشيف':'موظف الاستقبال';
+      } else {
+        const acc=roleAccounts.find(a=>a.pin===pin);
+        if(!acc)return setLoginError('الرمز السري غير صحيح');
+        name=acc.name;
+      }
+    }
+    setActiveAccountName(name);
     setRole(pendingRole);setPin('');setScreen(pendingRole==='chef'?'chef':'admin');
     setTab(pendingRole==='reception'?'subs':'dash');
   };
@@ -354,8 +428,9 @@ function App(){
   const submitOrder=()=>{
     if(!order.name.trim())return setOrderError('الرجاء إدخال الاسم');
     if(!/^05\d{8}$/.test(order.phone.trim()))return setOrderError('رقم الجوال غير صحيح');
+    if(order.duration==='custom' && orderDays<1)return setOrderError('الرجاء إدخال عدد أيام صحيح');
     setOrderError('');
-    wa('طلب اشتراك جديد\nالاسم: '+order.name+'\nالجوال: '+order.phone+'\nالباقة: '+PLANS[order.plan].label+'\nالمدة: '+order.duration+' يوم'+(order.delivery?'\nمع التوصيل':'')+(order.salad?'\nمع السلطة':'')+'\nالإجمالي: '+orderTotal+' ريال');
+    wa('طلب اشتراك جديد\nالاسم: '+order.name+'\nالجوال: '+order.phone+'\nالباقة: '+PLANS[order.plan].label+'\nالمدة: '+orderDays+' يوم'+(order.delivery?'\nمع التوصيل':'')+(order.salad?'\nمع السلطة':'')+(activePromoPercent>0?'\nعرض '+(promo.name||'المناسبة')+': خصم '+activePromoPercent+'٪':'')+'\nالإجمالي: '+orderTotal+' ريال');
   };
 
   const saveSub=()=>{
@@ -363,13 +438,14 @@ function App(){
     if(!/^05\d{8}$/.test(form.phone.trim()))return setFormError('رقم الجوال يجب أن يبدأ بـ 05');
     if(!form.name.trim())return setFormError('الرجاء إدخال الاسم');
     if(protTotal!==7)return setFormError('توزيع البروتينات يجب أن يساوي ٧ أيام');
+    if(form.duration==='custom' && formDays<1)return setFormError('الرجاء إدخال عدد أيام صحيح');
     let subscriber=subscribers.find(s=>s.nid===form.nid.trim()||s.phone===form.phone.trim());
     let newSubs=[...subscribers];
     if(!subscriber){subscriber={id:'u'+Date.now(),nid:form.nid.trim(),phone:form.phone.trim(),name:form.name.trim()};newSubs.push(subscriber);}
     const start=form.start;
-    const newSub={id:'sub'+Date.now(),subscriberId:subscriber.id,plan:form.plan,duration:Number(form.duration),
-      start,end:iso(addDays(new Date(start),Number(form.duration))),delivery:form.delivery,salad:form.salad,paid:form.paid,
-      proteins:{chicken:Number(form.chicken),meat:Number(form.meat),fish:Number(form.fish),veg:Number(form.veg)},total:formTotal};
+    const newSub={id:'sub'+Date.now(),subscriberId:subscriber.id,plan:form.plan,duration:formDays,
+      start,end:iso(addDays(new Date(start),formDays)),delivery:form.delivery,salad:form.salad,paid:form.paid,
+      proteins:{chicken:Number(form.chicken),meat:Number(form.meat),fish:Number(form.fish),veg:Number(form.veg)},total:formTotal,discountApplied:formDiscount};
     const newPlans={...plans};
     newPlans[subscriber.id]=distribute(newSub,meals,newSub.proteins);
     persist({subscribers:newSubs,subscriptions:[...subscriptions,newSub],plans:newPlans});
@@ -377,9 +453,76 @@ function App(){
   };
 
   const addMeal=()=>{
-    if(!meal.name.trim())return;
-    persist({meals:[...meals,{id:'m'+Date.now(),name:meal.name.trim(),type:meal.type,slot:meal.slot,kcal:Number(meal.kcal)||0,protein:Number(meal.protein)||0,week:Number(meal.week)}]});
-    setMeal({...meal,name:''});
+    const name=meal.name.trim();
+    if(!name)return;
+    if(meals.some(m=>m.name.trim()===name)){setMealError('هذه الوجبة موجودة بالفعل في بنك الوجبات');return;}
+    setMealError('');
+    persist({meals:[...meals,{id:'m'+Date.now(),name,type:meal.type,slot:meal.slot,kcal:Number(meal.kcal)||0,protein:Number(meal.protein)||0,week:Number(meal.week),image:meal.image.trim()}]});
+    setMeal({...meal,name:'',image:''});
+  };
+
+  const addMealsBulk=()=>{
+    const lines=[...new Set(bulkNames.split('\n').map(s=>s.trim()).filter(Boolean))];
+    if(!lines.length)return;
+    const existing=new Set(meals.map(m=>m.name.trim()));
+    const toAdd=lines.filter(n=>!existing.has(n)).map((n,i)=>({id:'m'+Date.now()+'_'+i,name:n,type:meal.type,slot:meal.slot,kcal:Number(meal.kcal)||0,protein:Number(meal.protein)||0,week:Number(meal.week),image:''}));
+    const skipped=lines.length-toAdd.length;
+    if(toAdd.length)persist({meals:[...meals,...toAdd]});
+    setBulkNames('');
+    setBulkMsg(toAdd.length+' وجبة أُضيفت'+(skipped?('، وتم تجاهل '+skipped+' مكررة'):''));
+    setTimeout(()=>setBulkMsg(''),5000);
+  };
+
+  const savePricing=()=>{
+    persist({pricing:priceForm});
+    setPriceSaved(true);
+    setTimeout(()=>setPriceSaved(false),2500);
+  };
+
+  const savePromo=()=>{
+    persist({promo:{...promoForm,percent:Math.max(0,Math.min(100,Number(promoForm.percent)||0))}});
+    setPromoSaved(true);
+    setTimeout(()=>setPromoSaved(false),2500);
+  };
+
+  const changeOwnerPin=()=>{
+    if(ownerPinForm.current!==ownerPin)return setOwnerPinError('الرمز الحالي غير صحيح');
+    if(!/^\d{4,}$/.test(ownerPinForm.next))return setOwnerPinError('الرمز الجديد يجب أن يكون ٤ أرقام على الأقل');
+    if(ownerPinForm.next!==ownerPinForm.confirm)return setOwnerPinError('تأكيد الرمز غير مطابق');
+    persist({ownerPin:ownerPinForm.next});
+    setOwnerPinForm({current:'',next:'',confirm:''});setOwnerPinError('');
+    setOwnerPinOk(true);setTimeout(()=>setOwnerPinOk(false),2500);
+  };
+
+  const addAccount=()=>{
+    if(!newAccount.name.trim())return setAccountError('الرجاء إدخال الاسم');
+    if(!/^\d{4,}$/.test(newAccount.pin))return setAccountError('الرمز السري يجب أن يكون ٤ أرقام على الأقل');
+    setAccountError('');
+    persist({accounts:[...accounts,{id:'acc'+Date.now(),name:newAccount.name.trim(),role:newAccount.role,pin:newAccount.pin}]});
+    setNewAccount({name:'',role:'reception',pin:''});
+  };
+
+  const deleteAccount=id=>{
+    if(window.confirm('حذف هذا الحساب؟'))persist({accounts:accounts.filter(a=>a.id!==id)});
+  };
+
+  const deleteAllSubscribers=()=>{
+    if(!subscribers.length)return;
+    if(window.confirm('سيتم حذف جميع المشتركين ('+subscribers.length+') وكل اشتراكاتهم نهائياً. هذا الإجراء لا يمكن التراجع عنه. هل أنت متأكد؟')){
+      persist({subscribers:[],subscriptions:[],plans:{}});
+    }
+  };
+
+  const setSubscriberDiscount=(id,val)=>{
+    const discount=Math.max(0,Math.min(100,Number(val)||0));
+    persist({subscribers:subscribers.map(s=>s.id===id?{...s,discount}:s)});
+  };
+
+  const submitReview=sb=>{
+    if(!review.text.trim())return setReviewMsg('الرجاء كتابة رأيك أولاً');
+    persist({testimonials:[...testimonialsData,{id:'t'+Date.now(),name:sb.name,stars:review.stars,text:review.text.trim(),initial:sb.name.trim()[0]||'م'}]});
+    setReview({stars:5,text:''});setReviewMsg('شكراً لمشاركة رأيك! 🌿');
+    setTimeout(()=>setReviewMsg(''),3500);
   };
 
   const portalLogin=()=>{
@@ -392,17 +535,18 @@ function App(){
   const lunchBank=meals.filter(m=>m.slot==='lunch');
   const weekMenu=DAYS.map((d,i)=>{const m=lunchBank[i%Math.max(1,lunchBank.length)]||{name:'—',kcal:0,protein:0};return{day:d,meal:m.name,kcal:m.kcal,protein:m.protein};});
 
-  const testimonials=[
+  const staticTestimonials=[
     {stars:'★★★★★',text:'أفضل اشتراك جربته — الوجبات طازجة والتوصيل دائماً في وقته. نزلت ٧ كيلو في شهرين.',name:'أحمد ا.',role:'مشترك منذ ٨ أشهر',initial:'أ'},
     {stars:'★★★★★',text:'التنوع ممتاز وما مللت أبداً. خدمة العملاء عبر الواتساب سريعة جداً.',name:'لمى ع.',role:'مشتركة منذ سنة',initial:'ل'},
     {stars:'★★★★★',text:'كمية البروتين مضبوطة مع تماريني. الشيف يراعي طلباتي الخاصة.',name:'فيصل م.',role:'مشترك منذ ٤ أشهر',initial:'ف'}
   ];
+  const testimonials=[...testimonialsData.slice().reverse().map(t=>({stars:'★'.repeat(t.stars)+'☆'.repeat(5-t.stars),text:t.text,name:t.name,role:'مشترك موثّق',initial:t.initial})),...staticTestimonials];
 
   /* ─── HEADER ─── */
   const Header=()=>(
     <header style={{position:'sticky',top:0,zIndex:40,background:'var(--green)',color:'var(--cream)',borderBottom:'1px solid rgba(185,155,84,.45)'}}>
       <div style={{maxWidth:1280,margin:'0 auto',padding:'12px 24px',display:'flex',alignItems:'center',gap:20}}>
-        <div onClick={()=>{setScreen('home');setRole(null);}} style={{display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
+        <div onClick={()=>{setScreen('home');setRole(null);setActiveAccountName('');}} style={{display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
           <div style={{width:46,height:46,border:'2px solid var(--gold)',borderRadius:'50%',display:'grid',placeItems:'center',fontFamily:'var(--font-heading)',fontWeight:900,fontSize:19,letterSpacing:-1,color:'var(--cream)'}}>DD</div>
           <div style={{lineHeight:1.05}}>
             <div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:20}}>Delicious Diet</div>
@@ -427,8 +571,8 @@ function App(){
       </div>
       {role && <div style={{background:'var(--color-accent-900)',padding:'8px 24px',display:'flex',alignItems:'center',gap:14,justifyContent:'center',fontSize:13,color:'rgba(245,242,234,.8)'}}>
         <span style={{width:7,height:7,background:'var(--gold)',borderRadius:'50%',animation:'ddPulse 2s infinite'}}/>
-        <span>{role==='owner'?'صاحب المطعم':role==='chef'?'الشيف':'موظف الاستقبال'}</span>
-        <button onClick={()=>{setScreen('home');setRole(null);}} style={{background:'transparent',border:'1px solid rgba(245,242,234,.3)',color:'rgba(245,242,234,.85)',fontFamily:'var(--font-body)',fontSize:12,padding:'4px 12px',cursor:'pointer'}}>خروج</button>
+        <span>{(()=>{const roleLabel=role==='owner'?'صاحب المطعم':role==='chef'?'الشيف':'موظف الاستقبال';return activeAccountName&&activeAccountName!==roleLabel?activeAccountName+' · '+roleLabel:roleLabel;})()}</span>
+        <button onClick={()=>{setScreen('home');setRole(null);setActiveAccountName('');}} style={{background:'transparent',border:'1px solid rgba(245,242,234,.3)',color:'rgba(245,242,234,.85)',fontFamily:'var(--font-body)',fontSize:12,padding:'4px 12px',cursor:'pointer'}}>خروج</button>
       </div>}
     </header>
   );
@@ -457,8 +601,13 @@ function App(){
               <div><div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:30,color:'var(--gold)'}}>٤.٩</div><div style={{fontSize:13,color:'rgba(245,242,234,.65)'}}>تقييم العملاء</div></div>
             </div>
           </div>
-          <div className="hero-img-box" style={{border:'1px solid rgba(185,155,84,.5)',padding:14,background:'rgba(12,44,32,.35)',aspectRatio:'4/5',display:'grid',placeItems:'center',color:'rgba(245,242,234,.3)',fontSize:18,textAlign:'center'}}>
-            📷 صورة الطبق الرئيسي
+          <div className="hero-img-box" style={{position:'relative',overflow:'hidden',border:'1px solid rgba(185,155,84,.5)',padding:heroMeals.length?0:14,background:'rgba(12,44,32,.35)',aspectRatio:'4/5',display:'grid',placeItems:'center',color:'rgba(245,242,234,.3)',fontSize:18,textAlign:'center'}}>
+            {heroMeals.length ? (
+              <div key={heroIdx} style={{position:'absolute',inset:0,animation:'ddUp .6s ease both'}}>
+                <div style={{position:'absolute',inset:0,backgroundImage:'url('+heroMeals[heroIdx%heroMeals.length].image+')',backgroundSize:'cover',backgroundPosition:'center'}}/>
+                <div style={{position:'absolute',insetInline:0,bottom:0,padding:'34px 18px 16px',background:'linear-gradient(0deg,rgba(12,44,32,.92),transparent)',color:'var(--cream)',fontFamily:'var(--font-heading)',fontWeight:800,fontSize:19,textAlign:'center'}}>{heroMeals[heroIdx%heroMeals.length].name}</div>
+              </div>
+            ) : '📷 صورة الطبق الرئيسي'}
           </div>
         </div>
       </section>
@@ -471,6 +620,13 @@ function App(){
           <span>🥗 اختيارات صحية</span>
         </div>
       </section>
+
+      {/* Promo */}
+      {promoActive && <section style={{background:'var(--gold)',color:'#20180A',padding:'14px 24px',textAlign:'center'}}>
+        <div style={{maxWidth:1280,margin:'0 auto',fontSize:15,fontWeight:700}}>
+          🎉 {promo.name||'عرض خاص'} — خصم {activePromoPercent}٪{promo.end?' حتى '+fmt(promo.end):''}
+        </div>
+      </section>}
 
       {/* Pricing */}
       <section id="pricing" style={{maxWidth:1280,margin:'0 auto',padding:'88px 24px'}}>
@@ -489,24 +645,25 @@ function App(){
                 </div>
               </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1px 1fr',gap:16,alignItems:'center',borderTop:'1px solid var(--color-divider)',paddingTop:20}}>
-                <div><div style={{fontSize:13,color:'var(--color-accent-600)',marginBottom:4}}>٢٤ يوم</div><div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:38,color:'var(--green)',lineHeight:1}}>{PLANS[k][24]}<span style={{fontSize:14,fontWeight:600,marginInlineStart:6}}>ريال</span></div></div>
+                <div><div style={{fontSize:13,color:'var(--color-accent-600)',marginBottom:4}}>٢٤ يوم</div><div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:38,color:'var(--green)',lineHeight:1}}>{pricing[k][24]}<span style={{fontSize:14,fontWeight:600,marginInlineStart:6}}>ريال</span></div></div>
                 <div style={{background:'var(--color-divider)',height:52}}/>
-                <div><div style={{fontSize:13,color:'var(--color-accent-600)',marginBottom:4}}>٦ أيام</div><div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:38,color:'var(--green)',lineHeight:1}}>{PLANS[k][6]}<span style={{fontSize:14,fontWeight:600,marginInlineStart:6}}>ريال</span></div></div>
+                <div><div style={{fontSize:13,color:'var(--color-accent-600)',marginBottom:4}}>٦ أيام</div><div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:38,color:'var(--green)',lineHeight:1}}>{pricing[k][6]}<span style={{fontSize:14,fontWeight:600,marginInlineStart:6}}>ريال</span></div></div>
               </div>
               <a href="#contact" className="btn-green" style={{marginTop:'auto',fontSize:'14.5px',padding:13,textAlign:'center',display:'block'}} onClick={()=>setOrder({...order,plan:k})}>اطلب هذا الاشتراك</a>
             </div>
           ))}
         </div>
+        <div style={{textAlign:'center',marginTop:18,fontSize:'13.5px',color:'var(--color-accent-600)'}}>تحتاج مدة مختلفة؟ اختر <a href="#contact" onClick={()=>setOrder({...order,duration:'custom'})}>مدة مخصصة</a> من نموذج الطلب أدناه</div>
         <div className="grid-2" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:26,marginTop:26}}>
           <div className="card" style={{padding:'22px 26px',display:'flex',alignItems:'center',gap:18,background:'var(--color-bg)'}}>
             <div style={{width:52,height:52,border:'2px solid var(--gold)',borderRadius:'50%',background:'var(--green)',color:'var(--cream)',display:'grid',placeItems:'center',fontSize:20}}>🚚</div>
             <div><div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:21,color:'var(--green)'}}>التوصيل</div><div style={{fontSize:13,color:'var(--color-accent-600)'}}>إضافة اختيارية</div></div>
-            <div style={{marginInlineStart:'auto',fontFamily:'var(--font-heading)',fontWeight:900,fontSize:30,color:'var(--green)'}}>{DELIVERY_PRICE}<span style={{fontSize:13,fontWeight:600,marginInlineStart:5}}>ريال</span></div>
+            <div style={{marginInlineStart:'auto',fontFamily:'var(--font-heading)',fontWeight:900,fontSize:30,color:'var(--green)'}}>{pricing.delivery}<span style={{fontSize:13,fontWeight:600,marginInlineStart:5}}>ريال</span></div>
           </div>
           <div className="card" style={{padding:'22px 26px',display:'flex',alignItems:'center',gap:18,background:'var(--color-bg)'}}>
             <div style={{width:52,height:52,border:'2px solid var(--gold)',borderRadius:'50%',background:'var(--green)',color:'var(--cream)',display:'grid',placeItems:'center',fontSize:20}}>🥗</div>
             <div><div style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:21,color:'var(--green)'}}>السلطة</div><div style={{fontSize:13,color:'var(--color-accent-600)'}}>إضافة اختيارية</div></div>
-            <div style={{marginInlineStart:'auto',fontFamily:'var(--font-heading)',fontWeight:900,fontSize:30,color:'var(--green)'}}>{SALAD_PRICE}<span style={{fontSize:13,fontWeight:600,marginInlineStart:5}}>ريال</span></div>
+            <div style={{marginInlineStart:'auto',fontFamily:'var(--font-heading)',fontWeight:900,fontSize:30,color:'var(--green)'}}>{pricing.salad}<span style={{fontSize:13,fontWeight:600,marginInlineStart:5}}>ريال</span></div>
           </div>
         </div>
       </section>
@@ -564,7 +721,7 @@ function App(){
             </div>
             <div style={{borderTop:'1px solid rgba(245,242,234,.2)',paddingTop:22}}>
               <div style={{fontSize:13,color:'rgba(245,242,234,.65)',marginBottom:8}}>الاشتراك المقترح لك</div>
-              <div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:28,color:'var(--gold)',marginBottom:16}}>{PLANS[recPlan].label} · ٢٤ يوم · {PLANS[recPlan][24]} ريال</div>
+              <div style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:28,color:'var(--gold)',marginBottom:16}}>{PLANS[recPlan].label} · ٢٤ يوم · {pricing[recPlan][24]} ريال</div>
               <button className="btn-gold" style={{width:'100%',fontSize:'14.5px',padding:13}} onClick={()=>wa('السلام عليكم، احسبت سعراتي: '+kcal+' سعرة يومياً، وأرغب باشتراك '+PLANS[recPlan].label)}>اطلب عبر واتساب</button>
             </div>
           </div>
@@ -600,12 +757,13 @@ function App(){
               <div className="field"><label>الاسم الكامل</label><input className="input" value={order.name} onChange={e=>setOrder({...order,name:e.target.value})} placeholder="محمد عبدالله"/></div>
               <div className="field"><label>رقم الجوال</label><input className="input" value={order.phone} onChange={e=>setOrder({...order,phone:e.target.value})} placeholder="05XXXXXXXX" dir="ltr"/></div>
               <div className="field"><label>نوع الاشتراك</label><select className="input" value={order.plan} onChange={e=>setOrder({...order,plan:e.target.value})}><option value="3">ثلاث وجبات</option><option value="2">وجبتين</option><option value="1">وجبة واحدة</option></select></div>
-              <div className="field"><label>المدة</label><select className="input" value={order.duration} onChange={e=>setOrder({...order,duration:e.target.value})}><option value="24">٢٤ يوم</option><option value="6">٦ أيام</option></select></div>
+              <div className="field"><label>المدة</label><select className="input" value={order.duration} onChange={e=>setOrder({...order,duration:e.target.value})}><option value="24">٢٤ يوم</option><option value="6">٦ أيام</option><option value="custom">مدة مخصصة</option></select></div>
+              {order.duration==='custom' && <div className="field"><label>عدد الأيام</label><input className="input" type="number" min={1} value={order.customDays} onChange={e=>setOrder({...order,customDays:e.target.value})} placeholder="مثال: يومان أو ٥ أيام"/></div>}
               <div className="field" style={{gridColumn:'span 2'}}>
                 <label>الإضافات</label>
                 <div style={{display:'flex',gap:22,paddingTop:6}}>
-                  <label style={{display:'flex',alignItems:'center',gap:9,cursor:'pointer',fontSize:'14.5px'}}><input type="checkbox" checked={order.delivery} onChange={e=>setOrder({...order,delivery:e.target.checked})} style={{width:17,height:17,accentColor:'var(--green)'}}/><span>التوصيل +{DELIVERY_PRICE} ر.س</span></label>
-                  <label style={{display:'flex',alignItems:'center',gap:9,cursor:'pointer',fontSize:'14.5px'}}><input type="checkbox" checked={order.salad} onChange={e=>setOrder({...order,salad:e.target.checked})} style={{width:17,height:17,accentColor:'var(--green)'}}/><span>السلطة +{SALAD_PRICE} ر.س</span></label>
+                  <label style={{display:'flex',alignItems:'center',gap:9,cursor:'pointer',fontSize:'14.5px'}}><input type="checkbox" checked={order.delivery} onChange={e=>setOrder({...order,delivery:e.target.checked})} style={{width:17,height:17,accentColor:'var(--green)'}}/><span>التوصيل +{pricing.delivery} ر.س</span></label>
+                  <label style={{display:'flex',alignItems:'center',gap:9,cursor:'pointer',fontSize:'14.5px'}}><input type="checkbox" checked={order.salad} onChange={e=>setOrder({...order,salad:e.target.checked})} style={{width:17,height:17,accentColor:'var(--green)'}}/><span>السلطة +{pricing.salad} ر.س</span></label>
                 </div>
               </div>
             </div>
@@ -669,7 +827,7 @@ function App(){
     const soon=activeSubs.filter(s=>daysLeft(s.end)<=7);
     const unpaid=subscriptions.filter(s=>s.paid!=='paid');
     const revenue=subscriptions.filter(s=>s.paid==='paid').reduce((a,s)=>a+s.total,0);
-    const tabDefs=role==='reception'?[['subs','المشتركون'],['new','اشتراك جديد'],['bank','بنك الوجبات']]:[['dash','لوحة القيادة'],['subs','المشتركون'],['new','اشتراك جديد'],['bank','بنك الوجبات'],['rev','الإيرادات']];
+    const tabDefs=role==='reception'?[['subs','المشتركون'],['new','اشتراك جديد'],['bank','بنك الوجبات']]:[['dash','لوحة القيادة'],['subs','المشتركون'],['new','اشتراك جديد'],['bank','بنك الوجبات'],['price','الأسعار'],['accounts','الحسابات'],['rev','الإيرادات']];
     const q=search.trim();
     const filtered=subscribers.filter(s=>!q||s.name.includes(q)||s.phone.includes(q)||s.nid.includes(q));
 
@@ -699,7 +857,7 @@ function App(){
               <tbody>{soon.sort((a,b)=>a.end.localeCompare(b.end)).map(s=>{const d=daysLeft(s.end);return(
                 <tr key={s.id}><td style={{fontWeight:700}}>{nameOf(s.subscriberId)}</td><td>{PLANS[s.plan].label}</td><td dir="ltr">{fmt(s.end)}</td>
                   <td><span style={pill(d)}>{d} يوم</span></td>
-                  <td><button className="btn-outline" style={{fontSize:'12.5px',padding:'5px 12px'}} onClick={()=>window.open('https://wa.me/966'+phoneOf(s.subscriberId).replace(/^0/,'')+'?text='+encodeURIComponent('مرحباً '+nameOf(s.subscriberId)+' 🌿\nاشتراكك ينتهي '+fmt(s.end)),'_blank')}>تذكير واتساب</button></td>
+                  <td><button className="btn-outline" style={{fontSize:'12.5px',padding:'5px 12px'}} onClick={()=>window.open('https://wa.me/966'+phoneOf(s.subscriberId).replace(/^0/,'')+'?text='+encodeURIComponent('مرحباً '+nameOf(s.subscriberId)+' 🌿\nاشتراكك ينتهي '+fmt(s.end)+'\nبوابتك: '+location.href.split('#')[0]+'#portal'),'_blank')}>تذكير واتساب</button></td>
                 </tr>);})}</tbody>
             </table>
           </div>
@@ -722,15 +880,17 @@ function App(){
           <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:24,color:'var(--green)'}}>المشتركون</h3>
           <input className="input" style={{maxWidth:280,marginInlineStart:'auto'}} placeholder="بحث بالاسم أو الجوال" value={search} onChange={e=>setSearch(e.target.value)}/>
           <button className="btn-green" style={{fontSize:'13.5px',padding:'10px 18px'}} onClick={()=>setTab('new')}>+ مشترك جديد</button>
+          {role==='owner' && <button className="btn-danger" style={{fontSize:'13.5px',padding:'10px 18px'}} onClick={deleteAllSubscribers}>حذف جميع المشتركين</button>}
         </div>
         <div style={{overflowX:'auto'}}>
-        <table className="table"><thead><tr><th>الاسم</th><th>الهوية</th><th>الجوال</th><th>الاشتراك</th><th>البداية</th><th>الانتهاء</th><th>المتبقي</th><th>الدفع</th><th>إجراءات</th></tr></thead>
+        <table className="table"><thead><tr><th>الاسم</th><th>الهوية</th><th>الجوال</th><th>الاشتراك</th><th>البداية</th><th>الانتهاء</th><th>المتبقي</th><th>الدفع</th>{role==='owner' && <th>خصم %</th>}<th>إجراءات</th></tr></thead>
           <tbody>{filtered.map(sb=>{const s=subOf(sb.id);const d=s?daysLeft(s.end):0;return(
             <tr key={sb.id}>
               <td style={{fontWeight:700}}>{sb.name}</td><td dir="ltr">{sb.nid}</td><td dir="ltr">{sb.phone}</td>
               <td>{s?PLANS[s.plan].label+' · '+s.duration+' يوم':'—'}</td><td dir="ltr">{s?fmt(s.start):'—'}</td><td dir="ltr">{s?fmt(s.end):'—'}</td>
               <td>{s?<span style={pill(d)}>{d>0?d+' يوم':'منتهي'}</span>:'—'}</td>
               <td>{s?<button onClick={()=>persist({subscriptions:subscriptions.map(x=>x.id===s.id?{...x,paid:s.paid==='paid'?'unpaid':s.paid==='unpaid'?'partial':'paid'}:x)})} style={{cursor:'pointer',fontFamily:'var(--font-body)',fontSize:'12.5px',fontWeight:700,padding:'5px 12px',border:'1px solid '+(s.paid==='paid'?'#1FA855':s.paid==='partial'?'#B99B54':'#C9714F'),background:'transparent',color:s.paid==='paid'?'#178A45':s.paid==='partial'?'#7C6634':'#8A2F1E'}}>{s.paid==='paid'?'مدفوع':s.paid==='partial'?'جزئي':'غير مدفوع'}</button>:'—'}</td>
+              {role==='owner' && <td><input type="number" min={0} max={100} defaultValue={sb.discount||0} onBlur={e=>setSubscriberDiscount(sb.id,e.target.value)} className="input" style={{width:64,padding:'6px 8px',fontSize:'12.5px'}} dir="ltr"/></td>}
               <td><div style={{display:'flex',gap:6}}>
                 <button className="btn-outline" style={{fontSize:'12.5px',padding:'5px 9px'}} onClick={()=>{setScreen('portal');setPortalId(sb.id);setPortalQuery(sb.phone);}}>الوجبات</button>
                 <button className="btn-danger" style={{fontSize:'12.5px',padding:'5px 9px'}} onClick={()=>{if(window.confirm('حذف '+sb.name+'؟')){const p={...plans};delete p[sb.id];persist({subscribers:subscribers.filter(x=>x.id!==sb.id),subscriptions:subscriptions.filter(x=>x.subscriberId!==sb.id),plans:p});}}}>حذف</button>
@@ -752,7 +912,8 @@ function App(){
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginTop:8}}>
             <div className="field"><label>نوع الاشتراك</label><select className="input" value={form.plan} onChange={e=>setForm({...form,plan:e.target.value})}><option value="3">ثلاث وجبات</option><option value="2">وجبتين</option><option value="1">وجبة واحدة</option></select></div>
-            <div className="field"><label>المدة</label><select className="input" value={form.duration} onChange={e=>setForm({...form,duration:e.target.value})}><option value="24">٢٤ يوم</option><option value="6">٦ أيام</option></select></div>
+            <div className="field"><label>المدة</label><select className="input" value={form.duration} onChange={e=>setForm({...form,duration:e.target.value})}><option value="24">٢٤ يوم</option><option value="6">٦ أيام</option><option value="custom">مدة مخصصة</option></select></div>
+            {form.duration==='custom' && <div className="field"><label>عدد الأيام</label><input className="input" type="number" min={1} value={form.customDays} onChange={e=>setForm({...form,customDays:e.target.value})} placeholder="مثال: يومان أو ٥ أيام"/></div>}
             <div className="field"><label>تاريخ البداية</label><input className="input" type="date" dir="ltr" value={form.start} onChange={e=>setForm({...form,start:e.target.value})}/></div>
             <div className="field"><label>حالة الدفع</label><select className="input" value={form.paid} onChange={e=>setForm({...form,paid:e.target.value})}><option value="paid">تم الدفع</option><option value="unpaid">لم يُدفع</option><option value="partial">دفعة جزئية</option></select></div>
           </div>
@@ -767,21 +928,22 @@ function App(){
             <div style={{fontSize:'12.5px',color:protTotal===7?'var(--color-accent-600)':'#8A2F1E',marginTop:8}}>{protTotal===7?'✓ المجموع ٧ أيام — التوزيع مضبوط':'المجموع الحالي '+protTotal+' — يجب أن يساوي ٧'}</div>
           </div>
           <div style={{display:'flex',gap:26,marginTop:20}}>
-            <label style={{display:'flex',alignItems:'center',gap:9,cursor:'pointer',fontSize:'14.5px'}}><input type="checkbox" checked={form.delivery} onChange={e=>setForm({...form,delivery:e.target.checked})} style={{width:17,height:17,accentColor:'var(--green)'}}/>التوصيل (+{DELIVERY_PRICE})</label>
-            <label style={{display:'flex',alignItems:'center',gap:9,cursor:'pointer',fontSize:'14.5px'}}><input type="checkbox" checked={form.salad} onChange={e=>setForm({...form,salad:e.target.checked})} style={{width:17,height:17,accentColor:'var(--green)'}}/>السلطة (+{SALAD_PRICE})</label>
+            <label style={{display:'flex',alignItems:'center',gap:9,cursor:'pointer',fontSize:'14.5px'}}><input type="checkbox" checked={form.delivery} onChange={e=>setForm({...form,delivery:e.target.checked})} style={{width:17,height:17,accentColor:'var(--green)'}}/>التوصيل (+{pricing.delivery})</label>
+            <label style={{display:'flex',alignItems:'center',gap:9,cursor:'pointer',fontSize:'14.5px'}}><input type="checkbox" checked={form.salad} onChange={e=>setForm({...form,salad:e.target.checked})} style={{width:17,height:17,accentColor:'var(--green)'}}/>السلطة (+{pricing.salad})</label>
           </div>
           {formError && <div className="error-box">{formError}</div>}
         </div>
         <div className="card" style={{padding:30,background:'var(--green)',color:'var(--cream)',borderColor:'var(--gold)',position:'sticky',top:110}}>
           <div style={{fontSize:13,letterSpacing:2,color:'var(--gold)',fontWeight:700,marginBottom:20}}>ملخص الاشتراك</div>
-          {[{k:'الباقة',v:PLANS[form.plan].label},{k:'المدة',v:form.duration+' يوم'},{k:'سعر الباقة',v:PLANS[form.plan][Number(form.duration)]+' ر.س'},{k:'التوصيل',v:form.delivery?DELIVERY_PRICE+' ر.س':'بدون'},{k:'السلطة',v:form.salad?SALAD_PRICE+' ر.س':'بدون'}].map((s,i)=>(
+          {[{k:'الباقة',v:PLANS[form.plan].label},{k:'المدة',v:formDays+' يوم'},{k:'سعر الباقة',v:(formTotal-(form.delivery?pricing.delivery:0)-(form.salad?pricing.salad:0))+' ر.س'},{k:'التوصيل',v:form.delivery?pricing.delivery+' ر.س':'بدون'},{k:'السلطة',v:form.salad?pricing.salad+' ر.س':'بدون'}].map((s,i)=>(
             <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'9px 0',borderBottom:'1px solid rgba(245,242,234,.14)',fontSize:'14.5px'}}><span style={{color:'rgba(245,242,234,.7)'}}>{s.k}</span><span style={{fontWeight:700}}>{s.v}</span></div>
           ))}
+          {formDiscount>0 && <div style={{display:'flex',justifyContent:'space-between',padding:'9px 0',borderBottom:'1px solid rgba(245,242,234,.14)',fontSize:'14.5px'}}><span style={{color:'var(--gold)'}}>خصم مطبّق</span><span style={{fontWeight:700,color:'var(--gold)'}}>{formSubscriberDiscount>=activePromoPercent?'خصم خاص بالمشترك':'عرض '+(promo.name||'المناسبة')} — {formDiscount}٪</span></div>}
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginTop:20}}>
             <span style={{color:'var(--gold)',fontSize:15}}>الإجمالي</span>
             <span style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:40}}>{formTotal} <span style={{fontSize:15}}>ر.س</span></span>
           </div>
-          <div style={{fontSize:13,color:'rgba(245,242,234,.6)',marginTop:6}}>ينتهي في {fmt(iso(addDays(new Date(form.start),Number(form.duration))))}</div>
+          <div style={{fontSize:13,color:'rgba(245,242,234,.6)',marginTop:6}}>ينتهي في {fmt(iso(addDays(new Date(form.start),formDays)))}</div>
           <button className="btn-gold" style={{marginTop:24,width:'100%',fontSize:15,padding:14}} onClick={saveSub}>حفظ الاشتراك وتوزيع الوجبات</button>
         </div>
       </div>}
@@ -793,19 +955,33 @@ function App(){
             <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:24,color:'var(--green)'}}>بنك الوجبات من الشيف</h3>
             <div className="seg" style={{marginInlineStart:'auto'}}><button className={cycle===1?'is-on':''} onClick={()=>setCycle(1)}>أسبوع واحد</button><button className={cycle===2?'is-on':''} onClick={()=>setCycle(2)}>أسبوعان</button></div>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr .8fr .8fr .8fr .9fr auto',gap:12,alignItems:'end',padding:18,border:'1px dashed var(--color-accent-400)',background:'var(--color-accent-100)'}}>
-            <div className="field"><label>اسم الوجبة</label><input className="input" value={meal.name} onChange={e=>setMeal({...meal,name:e.target.value})}/></div>
-            <div className="field"><label>النوع</label><select className="input" value={meal.type} onChange={e=>setMeal({...meal,type:e.target.value})}><option value="chicken">دجاج</option><option value="meat">لحم</option><option value="fish">سمك</option><option value="veg">نباتي</option></select></div>
-            <div className="field"><label>الوجبة</label><select className="input" value={meal.slot} onChange={e=>setMeal({...meal,slot:e.target.value})}><option value="lunch">غداء</option><option value="breakfast">فطور</option><option value="dinner">عشاء</option></select></div>
-            <div className="field"><label>سعرات</label><input className="input" type="number" value={meal.kcal} onChange={e=>setMeal({...meal,kcal:e.target.value})}/></div>
-            <div className="field"><label>بروتين غ</label><input className="input" type="number" value={meal.protein} onChange={e=>setMeal({...meal,protein:e.target.value})}/></div>
-            <div className="field"><label>الأسبوع</label><select className="input" value={meal.week} onChange={e=>setMeal({...meal,week:e.target.value})}><option value="1">الأسبوع ١</option><option value="2">الأسبوع ٢</option></select></div>
-            <button className="btn-green" style={{fontSize:'13.5px',padding:'11px 20px',height:42}} onClick={addMeal}>إضافة</button>
+          <div style={{padding:18,border:'1px dashed var(--color-accent-400)',background:'var(--color-accent-100)'}}>
+            <div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr .8fr .8fr .8fr .9fr auto',gap:12,alignItems:'end'}}>
+              <div className="field"><label>اسم الوجبة</label><input className="input" value={meal.name} onChange={e=>setMeal({...meal,name:e.target.value})}/></div>
+              <div className="field"><label>النوع</label><select className="input" value={meal.type} onChange={e=>setMeal({...meal,type:e.target.value})}><option value="chicken">دجاج</option><option value="meat">لحم</option><option value="fish">سمك</option><option value="veg">نباتي</option></select></div>
+              <div className="field"><label>الوجبة</label><select className="input" value={meal.slot} onChange={e=>setMeal({...meal,slot:e.target.value})}><option value="lunch">غداء</option><option value="breakfast">فطور</option><option value="dinner">عشاء</option></select></div>
+              <div className="field"><label>سعرات</label><input className="input" type="number" value={meal.kcal} onChange={e=>setMeal({...meal,kcal:e.target.value})}/></div>
+              <div className="field"><label>بروتين غ</label><input className="input" type="number" value={meal.protein} onChange={e=>setMeal({...meal,protein:e.target.value})}/></div>
+              <div className="field"><label>الأسبوع</label><select className="input" value={meal.week} onChange={e=>setMeal({...meal,week:e.target.value})}><option value="1">الأسبوع ١</option><option value="2">الأسبوع ٢</option></select></div>
+              <button className="btn-green" style={{fontSize:'13.5px',padding:'11px 20px',height:42}} onClick={addMeal}>إضافة</button>
+            </div>
+            <div style={{marginTop:12}}>
+              <div className="field"><label>رابط صورة الطبق (اختياري — تظهر في الصفحة الرئيسية)</label><input className="input" dir="ltr" value={meal.image} onChange={e=>setMeal({...meal,image:e.target.value})} placeholder="https://example.com/dish.jpg"/></div>
+            </div>
+            {mealError && <div className="error-box" style={{marginTop:12}}>{mealError}</div>}
+            <div style={{marginTop:16,paddingTop:16,borderTop:'1px dashed var(--color-accent-400)'}}>
+              <div className="field"><label>إضافة عدة وجبات دفعة واحدة (اسم في كل سطر — تُطبَّق عليها إعدادات النوع/الوجبة/السعرات/البروتين/الأسبوع أعلاه)</label>
+                <textarea className="input" rows={4} value={bulkNames} onChange={e=>setBulkNames(e.target.value)} placeholder={'دجاج مشوي\nدجاج تندوري\nدجاج مندي'} style={{resize:'vertical',fontFamily:'var(--font-body)'}}/>
+              </div>
+              <button className="btn-green" style={{fontSize:'13.5px',padding:'10px 20px',marginTop:10}} onClick={addMealsBulk}>إضافة الكل</button>
+              {bulkMsg && <div style={{marginTop:10,fontSize:'12.5px',color:'var(--color-accent-700)',fontWeight:700}}>{bulkMsg}</div>}
+            </div>
           </div>
         </div>
         <div className="grid-4" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:18}}>
           {meals.filter(m=>cycle===2?true:Number(m.week)===1).map(m=>(
             <div key={m.id} className="card" style={{background:'var(--color-bg)',display:'flex',flexDirection:'column'}}>
+              {m.image && <img src={m.image} alt={m.name} style={{width:'100%',height:120,objectFit:'cover'}}/>}
               <div style={{padding:16,display:'flex',flexDirection:'column',gap:9,flex:1}}>
                 <div style={{display:'flex',gap:6,flexWrap:'wrap'}}><span className="tag tag-accent">{TYPES[m.type]}</span><span className="tag tag-outline">{SLOTS[m.slot]}</span><span className="tag tag-neutral">أسبوع {m.week}</span></div>
                 <div style={{fontWeight:700,fontSize:15,color:'var(--green)',lineHeight:1.4}}>{m.name}</div>
@@ -816,6 +992,76 @@ function App(){
           ))}
         </div>
       </>}
+
+      {/* Pricing */}
+      {tab==='price' && <div className="card" style={{padding:26,background:'var(--color-bg)',maxWidth:820}}>
+        <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:24,color:'var(--green)',margin:'0 0 6px'}}>أسعار الاشتراكات</h3>
+        <p style={{fontSize:'13.5px',color:'var(--color-accent-600)',margin:'0 0 22px'}}>التعديل هنا ينعكس فوراً على أسعار الباقات في الصفحة الرئيسية.</p>
+        {['3','2','1'].map(k=>(
+          <div key={k} style={{display:'grid',gridTemplateColumns:'1.2fr 1fr 1fr',gap:14,alignItems:'end',padding:'14px 0',borderBottom:'1px solid var(--color-divider)'}}>
+            <div style={{fontWeight:700,fontSize:15,color:'var(--green)'}}>{PLANS[k].icon} {PLANS[k].label}</div>
+            <div className="field"><label>سعر ٢٤ يوم</label><input className="input" type="number" value={priceForm[k][24]} onChange={e=>setPriceForm({...priceForm,[k]:{...priceForm[k],24:Number(e.target.value)||0}})}/></div>
+            <div className="field"><label>سعر ٦ أيام</label><input className="input" type="number" value={priceForm[k][6]} onChange={e=>setPriceForm({...priceForm,[k]:{...priceForm[k],6:Number(e.target.value)||0}})}/></div>
+          </div>
+        ))}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginTop:18}}>
+          <div className="field"><label>سعر التوصيل</label><input className="input" type="number" value={priceForm.delivery} onChange={e=>setPriceForm({...priceForm,delivery:Number(e.target.value)||0})}/></div>
+          <div className="field"><label>سعر السلطة</label><input className="input" type="number" value={priceForm.salad} onChange={e=>setPriceForm({...priceForm,salad:Number(e.target.value)||0})}/></div>
+        </div>
+        <button className="btn-green" style={{marginTop:22,fontSize:'14.5px',padding:'11px 24px'}} onClick={savePricing}>حفظ الأسعار</button>
+        {priceSaved && <div style={{marginTop:14,color:'#178A45',fontSize:'13.5px',fontWeight:700}}>✓ تم حفظ الأسعار</div>}
+
+        <div style={{marginTop:34,paddingTop:26,borderTop:'1px solid var(--color-divider)'}}>
+          <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:22,color:'var(--green)',margin:'0 0 6px'}}>عروض المناسبات</h3>
+          <p style={{fontSize:'13.5px',color:'var(--color-accent-600)',margin:'0 0 18px'}}>خصم مؤقت يظهر للجميع بالصفحة الرئيسية وينطبق تلقائياً على الطلبات خلال الفترة المحددة (مثال: عرض اليوم الوطني).</p>
+          <div style={{display:'grid',gridTemplateColumns:'1fr .6fr',gap:14}}>
+            <div className="field"><label>اسم العرض</label><input className="input" value={promoForm.name} onChange={e=>setPromoForm({...promoForm,name:e.target.value})} placeholder="مثال: عرض اليوم الوطني"/></div>
+            <div className="field"><label>نسبة الخصم %</label><input className="input" type="number" min={0} max={100} value={promoForm.percent} onChange={e=>setPromoForm({...promoForm,percent:e.target.value})}/></div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginTop:14}}>
+            <div className="field"><label>تاريخ البداية</label><input className="input" type="date" dir="ltr" value={promoForm.start} onChange={e=>setPromoForm({...promoForm,start:e.target.value})}/></div>
+            <div className="field"><label>تاريخ النهاية</label><input className="input" type="date" dir="ltr" value={promoForm.end} onChange={e=>setPromoForm({...promoForm,end:e.target.value})}/></div>
+          </div>
+          <label style={{display:'flex',alignItems:'center',gap:9,cursor:'pointer',fontSize:'14.5px',marginTop:16}}><input type="checkbox" checked={promoForm.enabled} onChange={e=>setPromoForm({...promoForm,enabled:e.target.checked})} style={{width:17,height:17,accentColor:'var(--green)'}}/>تفعيل العرض</label>
+          <button className="btn-green" style={{marginTop:18,fontSize:'14.5px',padding:'11px 24px'}} onClick={savePromo}>حفظ العرض</button>
+          {promoSaved && <div style={{marginTop:14,color:'#178A45',fontSize:'13.5px',fontWeight:700}}>✓ تم حفظ العرض</div>}
+          {promoActive && <div style={{marginTop:14,color:'var(--color-accent-2-700)',fontSize:'13.5px',fontWeight:700}}>العرض الحالي مفعّل الآن ويُطبَّق تلقائياً على الأسعار</div>}
+        </div>
+      </div>}
+
+      {/* Accounts */}
+      {tab==='accounts' && <div className="grid-2" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24,alignItems:'start'}}>
+        <div className="card" style={{padding:26,background:'var(--color-bg)'}}>
+          <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:22,color:'var(--green)',margin:'0 0 18px'}}>تغيير رمز صاحب المطعم</h3>
+          <div style={{display:'flex',flexDirection:'column',gap:14}}>
+            <div className="field"><label>الرمز الحالي</label><input className="input" type="password" dir="ltr" value={ownerPinForm.current} onChange={e=>setOwnerPinForm({...ownerPinForm,current:e.target.value})}/></div>
+            <div className="field"><label>الرمز الجديد</label><input className="input" type="password" dir="ltr" value={ownerPinForm.next} onChange={e=>setOwnerPinForm({...ownerPinForm,next:e.target.value})}/></div>
+            <div className="field"><label>تأكيد الرمز الجديد</label><input className="input" type="password" dir="ltr" value={ownerPinForm.confirm} onChange={e=>setOwnerPinForm({...ownerPinForm,confirm:e.target.value})}/></div>
+          </div>
+          {ownerPinError && <div className="error-box">{ownerPinError}</div>}
+          {ownerPinOk && <div style={{marginTop:14,color:'#178A45',fontSize:'13.5px',fontWeight:700}}>✓ تم تغيير الرمز السري</div>}
+          <button className="btn-green" style={{marginTop:18,fontSize:'14.5px',padding:'11px 24px'}} onClick={changeOwnerPin}>حفظ الرمز الجديد</button>
+        </div>
+        <div className="card" style={{padding:26,background:'var(--color-bg)'}}>
+          <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:22,color:'var(--green)',margin:'0 0 18px'}}>حسابات الاستقبال والشيف</h3>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto',gap:10,alignItems:'end',marginBottom:18,padding:16,border:'1px dashed var(--color-accent-400)',background:'var(--color-accent-100)'}}>
+            <div className="field"><label>الاسم</label><input className="input" value={newAccount.name} onChange={e=>setNewAccount({...newAccount,name:e.target.value})}/></div>
+            <div className="field"><label>الدور</label><select className="input" value={newAccount.role} onChange={e=>setNewAccount({...newAccount,role:e.target.value})}><option value="reception">استقبال</option><option value="chef">شيف</option></select></div>
+            <div className="field"><label>الرمز السري</label><input className="input" dir="ltr" value={newAccount.pin} onChange={e=>setNewAccount({...newAccount,pin:e.target.value})}/></div>
+            <button className="btn-green" style={{fontSize:'13.5px',padding:'11px 18px',height:42}} onClick={addAccount}>إضافة</button>
+          </div>
+          {accountError && <div className="error-box">{accountError}</div>}
+          {accounts.length===0 && <div style={{padding:20,textAlign:'center',color:'var(--color-accent-600)',fontSize:'13.5px'}}>لا توجد حسابات بعد — الرمز الافتراضي 1234 يعمل لكل الأدوار حتى تُضيف حساباً</div>}
+          {accounts.map(a=>(
+            <div key={a.id} style={{display:'flex',alignItems:'center',gap:12,padding:'11px 0',borderBottom:'1px solid var(--color-divider)'}}>
+              <div style={{flex:1}}><div style={{fontWeight:700,fontSize:'14.5px'}}>{a.name}</div><div style={{fontSize:'12.5px',color:'var(--color-accent-600)'}}>{a.role==='chef'?'الشيف':'موظف الاستقبال'}</div></div>
+              <div style={{fontFamily:'var(--font-heading)',fontWeight:700,fontSize:15,minWidth:60,textAlign:'center'}} dir="ltr">{revealedAccountId===a.id?a.pin:'••••'}</div>
+              <button className="btn-outline" style={{fontSize:'12.5px',padding:'5px 10px'}} onClick={()=>setRevealedAccountId(revealedAccountId===a.id?null:a.id)}>{revealedAccountId===a.id?'إخفاء':'استعادة'}</button>
+              <button className="btn-danger" style={{fontSize:'12.5px',padding:'5px 10px'}} onClick={()=>deleteAccount(a.id)}>حذف</button>
+            </div>
+          ))}
+        </div>
+      </div>}
 
       {/* Revenue */}
       {tab==='rev' && <>
@@ -972,6 +1218,17 @@ function App(){
             </div>
           </div>
         ))}
+      </div>
+      <div className="card" style={{padding:30,background:'var(--color-bg)',marginTop:24,maxWidth:640}}>
+        <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:22,color:'var(--green)',margin:'0 0 14px'}}>شارك رأيك معنا</h3>
+        <div style={{display:'flex',gap:6,marginBottom:14}}>
+          {[1,2,3,4,5].map(n=>(
+            <span key={n} onClick={()=>setReview({...review,stars:n})} style={{cursor:'pointer',fontSize:26,color:n<=review.stars?'var(--gold)':'var(--color-divider)'}}>★</span>
+          ))}
+        </div>
+        <textarea className="input" rows={3} value={review.text} onChange={e=>setReview({...review,text:e.target.value})} placeholder="أخبرنا برأيك في الوجبات والخدمة..." style={{resize:'vertical',fontFamily:'var(--font-body)'}}/>
+        <button className="btn-green" style={{marginTop:14,fontSize:'14.5px',padding:'11px 24px'}} onClick={()=>submitReview(psb)}>إرسال الرأي</button>
+        {reviewMsg && <div style={{marginTop:12,color:'#178A45',fontSize:'13.5px',fontWeight:700}}>{reviewMsg}</div>}
       </div>
     </div>);
   };
