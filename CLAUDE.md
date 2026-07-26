@@ -30,4 +30,4 @@
 ## أوامر
 - معاينة: `python3 -m http.server 8000`
 - نشر GitHub: `git add -A && git commit -m "..." && git push`
-- نشر Firebase: `firebase deploy --only hosting --project delicious-diet-2026`
+- نشر Firebase: `firebase deploy --only hosting --project delicious-diet-631b2`
