@@ -202,15 +202,38 @@ const SEED_SUBS = [
   {id:'s6',nid:'1088990022',phone:'0578112233',name:'سارة ماجد الزهراني'}
 ];
 
+// يرتّب أنواع البروتين على أيام الأسبوع بحيث لا يتكرر نفس النوع يومين متتاليَين إلا إذا تعذّر ذلك رياضياً
+function spreadTypes(counts) {
+  const order = ['chicken','meat','fish','veg'];
+  const remaining = {}; order.forEach(t => remaining[t] = counts[t] || 0);
+  const total = order.reduce((s,t) => s + remaining[t], 0);
+  const result = [];
+  let prev = null;
+  for (let i=0; i<total; i++) {
+    let candidates = order.filter(t => remaining[t] > 0 && t !== prev);
+    if (candidates.length === 0) candidates = order.filter(t => remaining[t] > 0);
+    candidates.sort((a,b) => remaining[b] - remaining[a]);
+    const pick = candidates[0];
+    remaining[pick]--;
+    result.push(pick);
+    prev = pick;
+  }
+  return result;
+}
+
 function distribute(sub, meals, proteins) {
   const bank = meals.filter(m => Number(m.week)===1);
   const pool = t => bank.filter(m => m.slot==='lunch' && m.type===t);
   const q = proteins || {chicken:3,meat:2,fish:1,veg:1};
-  let lunches = [];
-  ['chicken','meat','fish','veg'].forEach(t => {
-    const p=pool(t);
-    for(let i=0;i<(q[t]||0);i++) if(p.length) lunches.push(p[i%p.length]);
-  });
+  const typeOrder = spreadTypes(q);
+  const nextIdx = {chicken:0,meat:0,fish:0,veg:0};
+  let lunches = typeOrder.map(t => {
+    const p = pool(t);
+    if (!p.length) return null;
+    const m = p[nextIdx[t] % p.length];
+    nextIdx[t]++;
+    return m;
+  }).filter(Boolean);
   const allLunch = bank.filter(m=>m.slot==='lunch');
   while(lunches.length<7 && allLunch.length) lunches.push(allLunch[lunches.length%allLunch.length]);
   lunches=lunches.slice(0,7);
@@ -345,6 +368,35 @@ function App(){
     return ()=>clearInterval(t);
   },[heroMeals.length]);
   const subOf=sid=>subscriptions.filter(s=>s.subscriberId===sid).sort((a,b)=>b.start.localeCompare(a.start))[0];
+  const slotOrder={breakfast:0,lunch:1,dinner:2};
+  const setDayMeal=(subscriberId,dayIndex,slot,mealId)=>{
+    const current=(plans[subscriberId]||DAYS.map(()=>[])).map(day=>day.slice());
+    while(current.length<7) current.push([]);
+    const kept=current[dayIndex].filter(id=>{const m=mealById(id);return !m||m.slot!==slot;});
+    if(mealId) kept.push(mealId);
+    kept.sort((a,b)=>(slotOrder[(mealById(a)||{}).slot]??9)-(slotOrder[(mealById(b)||{}).slot]??9));
+    current[dayIndex]=kept;
+    persist({plans:{...plans,[subscriberId]:current}});
+  };
+  const swapDays=(subscriberId,i,j)=>{
+    const current=(plans[subscriberId]||DAYS.map(()=>[])).map(day=>day.slice());
+    if(!current[i]||!current[j])return;
+    const tmp=current[i];current[i]=current[j];current[j]=tmp;
+    persist({plans:{...plans,[subscriberId]:current}});
+  };
+  const redistributeSub=subscriberId=>{
+    const sub=subOf(subscriberId);
+    if(!sub)return;
+    persist({plans:{...plans,[subscriberId]:distribute(sub,meals,sub.proteins)}});
+  };
+  const redistributeAll=()=>{
+    const newPlans={...plans};
+    subscribers.forEach(sb=>{
+      const sub=subOf(sb.id);
+      if(sub) newPlans[sb.id]=distribute(sub,meals,sub.proteins);
+    });
+    persist({plans:newPlans});
+  };
   const activeSubs=subscriptions.filter(s=>daysLeft(s.end)>0);
   const nameOf=id=>(subscribers.find(x=>x.id===id)||{}).name||'—';
   const phoneOf=id=>(subscribers.find(x=>x.id===id)||{}).phone||'';
@@ -880,6 +932,7 @@ function App(){
           <h3 style={{fontFamily:'var(--font-heading)',fontWeight:800,fontSize:24,color:'var(--green)'}}>المشتركون</h3>
           <input className="input" style={{maxWidth:280,marginInlineStart:'auto'}} placeholder="بحث بالاسم أو الجوال" value={search} onChange={e=>setSearch(e.target.value)}/>
           <button className="btn-green" style={{fontSize:'13.5px',padding:'10px 18px'}} onClick={()=>setTab('new')}>+ مشترك جديد</button>
+          <button className="btn-outline" style={{fontSize:'13.5px',padding:'10px 18px'}} onClick={()=>{if(window.confirm('سيُعاد توزيع وجبات كل المشتركين ('+subscribers.length+') تلقائياً بحيث لا يتكرر نفس نوع البروتين يومين متتاليَين. أي تعديل يدوي سابق سيُستبدل. متابعة؟'))redistributeAll();}}>توزيع تلقائي لجميع المشتركين</button>
           {role==='owner' && <button className="btn-danger" style={{fontSize:'13.5px',padding:'10px 18px'}} onClick={deleteAllSubscribers}>حذف جميع المشتركين</button>}
         </div>
         <div style={{overflowX:'auto'}}>
@@ -1172,8 +1225,10 @@ function App(){
     const left=daysLeft(s.end);
     const week=DAYS.map((d,i)=>({
       day:d,headBg:i===new Date().getDay()?'var(--gold)':'var(--green)',
-      meals:((plans[psb.id]||[])[i]||[]).map(id=>{const m=mealById(id)||{};return{name:m.name||'—',kcal:m.kcal||0,slotLabel:SLOTS[m.slot]||''};})
+      meals:((plans[psb.id]||[])[i]||[]).map(id=>{const m=mealById(id)||{};return{id,name:m.name||'—',kcal:m.kcal||0,slot:m.slot,slotLabel:SLOTS[m.slot]||''};})
     }));
+    const isAdmin=role==='owner'||role==='reception';
+    const planSlots=Number(s.plan)>=3?['breakfast','lunch','dinner']:Number(s.plan)>=2?['breakfast','lunch']:['lunch'];
     return(
     <div style={{maxWidth:1180,margin:'0 auto',padding:'44px 24px 80px'}}>
       <div className="card" style={{padding:34,background:'var(--green)',color:'var(--cream)',borderColor:'var(--gold)',marginBottom:24}}>
@@ -1202,13 +1257,36 @@ function App(){
           <button onClick={()=>{setPortalId(null);setPortalQuery('');}} style={{background:'transparent',border:'1px solid rgba(245,242,234,.4)',color:'var(--cream)',fontFamily:'var(--font-body)',fontSize:14,padding:'12px 20px',cursor:'pointer'}}>خروج</button>
         </div>
       </div>
-      <h3 style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:28,color:'var(--green)',margin:'0 0 18px'}}>وجباتك هذا الأسبوع</h3>
+      <div style={{display:'flex',alignItems:'center',gap:14,flexWrap:'wrap',margin:'0 0 18px'}}>
+        <h3 style={{fontFamily:'var(--font-heading)',fontWeight:900,fontSize:28,color:'var(--green)',margin:0}}>وجباتك هذا الأسبوع</h3>
+        {isAdmin && <>
+          <span style={{fontSize:'12.5px',color:'var(--color-accent-600)'}}>عدّل وجبة أي يوم من القوائم أدناه، أو بدّل ترتيب الأيام بالأسهم</span>
+          <button className="btn-outline" style={{fontSize:'12.5px',padding:'8px 16px',marginInlineStart:'auto'}} onClick={()=>{if(window.confirm('إعادة التوزيع التلقائي ستستبدل كل وجبات هذا الأسبوع — متابعة؟'))redistributeSub(psb.id);}}>توزيع تلقائي</button>
+        </>}
+      </div>
       <div className="grid-7" style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:14}}>
         {week.map((d,i)=>(
           <div key={i} className="card" style={{background:'var(--color-bg)',display:'flex',flexDirection:'column'}}>
-            <div style={{background:d.headBg,color:'var(--cream)',padding:9,textAlign:'center',fontFamily:'var(--font-heading)',fontWeight:700,fontSize:15}}>{d.day}</div>
+            <div style={{background:d.headBg,color:'var(--cream)',padding:9,display:'flex',alignItems:'center',justifyContent:'space-between',fontFamily:'var(--font-heading)',fontWeight:700,fontSize:15}}>
+              {isAdmin ? <button title="بدّل مع اليوم السابق" disabled={i===0} onClick={()=>swapDays(psb.id,i,i-1)} style={{background:'transparent',border:'none',color:'var(--cream)',opacity:i===0?.3:1,cursor:i===0?'default':'pointer',fontSize:14,padding:0}}>▶</button> : <span/>}
+              <span>{d.day}</span>
+              {isAdmin ? <button title="بدّل مع اليوم التالي" disabled={i===6} onClick={()=>swapDays(psb.id,i,i+1)} style={{background:'transparent',border:'none',color:'var(--cream)',opacity:i===6?.3:1,cursor:i===6?'default':'pointer',fontSize:14,padding:0}}>◀</button> : <span/>}
+            </div>
             <div style={{padding:12,display:'flex',flexDirection:'column',gap:10}}>
-              {d.meals.map((m,j)=>(
+              {isAdmin && planSlots.map(slot=>{
+                const current=d.meals.find(m=>m.slot===slot);
+                const options=meals.filter(m=>m.slot===slot);
+                return (
+                  <div key={slot} className="field" style={{gap:3}}>
+                    <label style={{fontSize:10}}>{SLOTS[slot]}</label>
+                    <select className="input" style={{fontSize:'12px',padding:'6px 8px'}} value={current?current.id:''} onChange={e=>setDayMeal(psb.id,i,slot,e.target.value||null)}>
+                      <option value="">—</option>
+                      {options.map(m=>(<option key={m.id} value={m.id}>{TYPES[m.type]} · {m.name}</option>))}
+                    </select>
+                  </div>
+                );
+              })}
+              {!isAdmin && d.meals.map((m,j)=>(
                 <div key={j} style={{borderBottom:'1px solid var(--color-divider)',paddingBottom:9}}>
                   <div style={{fontSize:11,color:'var(--color-accent-2-600)',fontWeight:700,marginBottom:3}}>{m.slotLabel}</div>
                   <div style={{fontSize:13,fontWeight:600,lineHeight:1.4,color:'var(--green)'}}>{m.name}</div>
