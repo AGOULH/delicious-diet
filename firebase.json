@@ -1,6 +1,6 @@
 {
   "hosting": {
     "public": ".",
-    "ignore": ["firebase.json", "CLAUDE.md", "**/.*", "**/node_modules/**"]
+    "ignore": ["firebase.json", "CLAUDE.md", "PRODUCT.md", "DESIGN.md", "**/.*", "**/node_modules/**"]
   }
 }

@@ -1,3 +1,4 @@
 .DS_Store
 node_modules/
 .firebase/
+.claude/settings.local.json

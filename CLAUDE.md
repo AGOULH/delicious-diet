@@ -27,6 +27,14 @@
 - النصوص الجديدة بالعربية الفصحى المبسطة.
 - بعد أي تعديل: معاينة محلية قبل النشر.
 
+## سكيلز التصميم (مركّبة في `.claude/skills/`)
+- `impeccable` — للتحسين والمراجعة: `/impeccable audit` · `critique` · `polish` · `typeset` · `layout` · `adapt`.
+- `emil-design-eng` · `review-animations` — جودة الحركة والأنيميشن.
+- `mobile-native` — سلوك الجوال (100vh، التكبير عند الكتابة، مناطق الأمان).
+- الأولوية لقواعد هذا الملف والهوية البصرية على اقتراحات السكيلز: لا تغيير للخطوط أو الألوان، ولا إعادة تصميم إلا بطلب صريح.
+- استخدم الأوامر التحسينية (refinement) لا أوامر إعادة التصميم. تأكد من صحة RTL (خصائص منطقية مثل `margin-inline-start` بدل `left/right`).
+- يُسمح لـ Impeccable بإنشاء `PRODUCT.md` و`DESIGN.md` في الجذر (توثيق فقط).
+
 ## أوامر
 - معاينة: `python3 -m http.server 8000`
 - نشر GitHub: `git add -A && git commit -m "..." && git push`
